@@ -11,6 +11,9 @@ abstract class AppStrings {
 
   String get playlistsHeader;
   String get playlistLabel;
+  String get libraryLabel;
+  String get likedLibraryName;
+  String get likedLibraryDescription;
   String get searchHint;
   String get columnTitle;
   String get columnAlbum;
@@ -25,6 +28,22 @@ abstract class AppStrings {
   String get themeDark;
   String get themeLight;
   String get close;
+
+  String get authWelcomeTitle;
+  String get authLoginTab;
+  String get authRegisterTab;
+  String get authEmailField;
+  String get authNameField;
+  String get authPasswordField;
+  String get authLoginButton;
+  String get authRegisterButton;
+  String get authLogout;
+  String get authErrorInvalidInput;
+  String get authErrorInvalidEmail;
+  String get authErrorUserNotFound;
+  String get authErrorWrongPassword;
+  String get authErrorUserExists;
+  String get authLoggedInAs;
 
   static AppStrings of(AppLanguage lang) {
     switch (lang) {
@@ -53,6 +72,12 @@ class _StringsRu implements AppStrings {
   @override
   String get playlistLabel => 'ПЛЕЙЛИСТ';
   @override
+  String get libraryLabel => 'БИБЛИОТЕКА';
+  @override
+  String get likedLibraryName => 'Мои лайкнутые';
+  @override
+  String get likedLibraryDescription => 'Треки, которые вам понравились';
+  @override
   String get searchHint => 'Что хотите послушать?';
   @override
   String get columnTitle => 'НАЗВАНИЕ';
@@ -79,6 +104,37 @@ class _StringsRu implements AppStrings {
   String get themeLight => 'Светлая';
   @override
   String get close => 'Закрыть';
+
+  @override
+  String get authWelcomeTitle => 'Добро пожаловать в ReynM';
+  @override
+  String get authLoginTab => 'Вход';
+  @override
+  String get authRegisterTab => 'Регистрация';
+  @override
+  String get authEmailField => 'Почта';
+  @override
+  String get authNameField => 'Имя аккаунта';
+  @override
+  String get authPasswordField => 'Пароль';
+  @override
+  String get authLoginButton => 'Войти';
+  @override
+  String get authRegisterButton => 'Зарегистрироваться';
+  @override
+  String get authLogout => 'Выйти из аккаунта';
+  @override
+  String get authErrorInvalidInput => 'Заполните все поля';
+  @override
+  String get authErrorInvalidEmail => 'Введите корректную почту';
+  @override
+  String get authErrorUserNotFound => 'Аккаунт с такой почтой не найден';
+  @override
+  String get authErrorWrongPassword => 'Неверный пароль';
+  @override
+  String get authErrorUserExists => 'Аккаунт с такой почтой уже есть';
+  @override
+  String get authLoggedInAs => 'Вы вошли как';
 }
 
 class _StringsEn implements AppStrings {
@@ -97,6 +153,12 @@ class _StringsEn implements AppStrings {
   String get playlistsHeader => 'PLAYLISTS';
   @override
   String get playlistLabel => 'PLAYLIST';
+  @override
+  String get libraryLabel => 'LIBRARY';
+  @override
+  String get likedLibraryName => 'Liked Songs';
+  @override
+  String get likedLibraryDescription => 'Songs you\'ve liked';
   @override
   String get searchHint => 'What do you want to listen to?';
   @override
@@ -124,4 +186,35 @@ class _StringsEn implements AppStrings {
   String get themeLight => 'Light';
   @override
   String get close => 'Close';
+
+  @override
+  String get authWelcomeTitle => 'Welcome to ReynM';
+  @override
+  String get authLoginTab => 'Log in';
+  @override
+  String get authRegisterTab => 'Sign up';
+  @override
+  String get authEmailField => 'Email';
+  @override
+  String get authNameField => 'Account name';
+  @override
+  String get authPasswordField => 'Password';
+  @override
+  String get authLoginButton => 'Log in';
+  @override
+  String get authRegisterButton => 'Create account';
+  @override
+  String get authLogout => 'Log out';
+  @override
+  String get authErrorInvalidInput => 'Fill in all fields';
+  @override
+  String get authErrorInvalidEmail => 'Enter a valid email address';
+  @override
+  String get authErrorUserNotFound => 'No account with this email';
+  @override
+  String get authErrorWrongPassword => 'Incorrect password';
+  @override
+  String get authErrorUserExists => 'An account with this email already exists';
+  @override
+  String get authLoggedInAs => 'Logged in as';
 }

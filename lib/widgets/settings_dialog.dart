@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../auth/auth_controller.dart';
 import '../localization/app_language.dart';
 import '../localization/locale_controller.dart';
 import '../theme/app_theme.dart';
@@ -13,6 +14,7 @@ class SettingsDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleController>();
     final themeController = context.watch<ThemeController>();
+    final auth = context.watch<AuthController>();
     final pal = AppColors.of(context);
     final s = locale.s;
 
@@ -40,6 +42,21 @@ class SettingsDialog extends StatelessWidget {
                   ),
                 ],
               ),
+              if (auth.currentUserEmail != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.account_circle_outlined, size: 18, color: pal.textSecondary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${s.authLoggedInAs} ${auth.currentUserName ?? auth.currentUserEmail}',
+                        style: TextStyle(color: pal.textSecondary, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 16),
               Text(
                 s.themeLabel,

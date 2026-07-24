@@ -20,6 +20,12 @@ dependencies:
   # S3-совместимый клиент — им же читаем Yandex Object Storage
   minio: ^3.5.0
 
+  # Локальное хранилище аккаунтов и текущей сессии (вход/регистрация)
+  shared_preferences: ^2.2.3
+
+  # Хеширование паролей перед сохранением на диск
+  crypto: ^3.0.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

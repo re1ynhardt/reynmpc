@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../library/music_library.dart';
 import '../localization/locale_controller.dart';
 import '../models/track.dart';
 import '../player/player_controller.dart';
@@ -46,13 +47,16 @@ class TrackListView extends StatelessWidget {
         ...List.generate(tracks.length, (i) {
           final track = tracks[i];
           final isCurrent = player.currentTrack?.id == track.id;
+          final library = context.watch<MusicLibrary>();
           return _TrackRow(
             index: i + 1,
             track: track,
             isCurrent: isCurrent,
             isPlaying: isCurrent && player.isPlaying,
+            isLiked: library.isLiked(track),
             durationLabel: _formatDuration(track.duration),
             onTap: () => player.playFromList(tracks, i),
+            onToggleLike: () => library.toggleLike(track),
           );
         }),
       ],
@@ -65,16 +69,20 @@ class _TrackRow extends StatefulWidget {
   final Track track;
   final bool isCurrent;
   final bool isPlaying;
+  final bool isLiked;
   final String durationLabel;
   final VoidCallback onTap;
+  final VoidCallback onToggleLike;
 
   const _TrackRow({
     required this.index,
     required this.track,
     required this.isCurrent,
     required this.isPlaying,
+    required this.isLiked,
     required this.durationLabel,
     required this.onTap,
+    required this.onToggleLike,
   });
 
   @override
@@ -140,6 +148,23 @@ class _TrackRowState extends State<_TrackRow> {
                 child: Text(widget.track.album,
                     maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: pal.textSecondary)),
               ),
+              SizedBox(
+                width: 32,
+                child: (_hovering || widget.isLiked)
+                    ? IconButton(
+                        onPressed: widget.onToggleLike,
+                        splashRadius: 16,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Icon(
+                          widget.isLiked ? Icons.favorite : Icons.favorite_border,
+                          size: 18,
+                          color: widget.isLiked ? pal.accent : pal.textSecondary,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
               Text(widget.durationLabel, style: TextStyle(color: pal.textSecondary)),
               const SizedBox(width: 24),
             ],

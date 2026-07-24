@@ -161,6 +161,7 @@ class AppColors {
   AppColors._();
 
   static const green = Color(0xFF1DB954);
+  static const red = Color(0xFFE0294B);
 
   static AppPalette of(BuildContext context) {
     return Theme.of(context).extension<AppPalette>() ?? AppPalette.dark;

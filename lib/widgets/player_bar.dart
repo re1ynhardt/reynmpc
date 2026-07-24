@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../library/music_library.dart';
 import '../player/player_controller.dart';
 import '../theme/app_theme.dart';
 
@@ -17,8 +18,10 @@ class PlayerBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final player = context.watch<PlayerController>();
+    final library = context.watch<MusicLibrary>();
     final track = player.currentTrack;
     final pal = AppColors.of(context);
+    final liked = track != null && library.isLiked(track);
 
     return Container(
       height: 90,
@@ -54,7 +57,17 @@ class PlayerBar extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Icon(Icons.favorite_border, size: 18, color: pal.textSecondary),
+                      IconButton(
+                        onPressed: () => library.toggleLike(track),
+                        splashRadius: 16,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Icon(
+                          liked ? Icons.favorite : Icons.favorite_border,
+                          size: 18,
+                          color: liked ? pal.accent : pal.textSecondary,
+                        ),
+                      ),
                     ],
                   ),
           ),

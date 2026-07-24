@@ -9,6 +9,7 @@ import '../localization/locale_controller.dart';
 import '../models/nav_view.dart';
 import '../models/playlist.dart';
 import '../theme/app_theme.dart';
+import '../widgets/account_menu.dart';
 import '../widgets/library_grid_view.dart';
 import '../widgets/player_bar.dart';
 import '../widgets/sidebar.dart';
@@ -21,9 +22,60 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+/// Один шаг истории навигации: раздел (Главная/Поиск/Медиатека) и —
+/// если это плейлист, открытый на Главной — сам плейлист, чтобы кнопка
+/// "назад" возвращала именно к нему, а не к дефолтному.
+class _NavEntry {
+  final NavView view;
+  final Playlist? playlist;
+  const _NavEntry(this.view, this.playlist);
+}
+
 class _HomeScreenState extends State<HomeScreen> {
   final _searchController = TextEditingController();
   NavView _view = NavView.home;
+
+  // История навигации для кнопок "назад"/"вперёд" в верхней панели —
+  // работает как в браузере: любой переход, кроме самих back/forward,
+  // обрезает "будущее" и добавляет новую запись.
+  final List<_NavEntry> _history = [const _NavEntry(NavView.home, null)];
+  int _historyIndex = 0;
+
+  bool get _canGoBack => _historyIndex > 0;
+  bool get _canGoForward => _historyIndex < _history.length - 1;
+
+  void _pushHistory(NavView view, {Playlist? playlist}) {
+    final entry = _NavEntry(view, playlist ?? context.read<MusicLibrary>().selectedPlaylist);
+    if (_historyIndex < _history.length - 1) {
+      _history.removeRange(_historyIndex + 1, _history.length);
+    }
+    _history.add(entry);
+    _historyIndex = _history.length - 1;
+  }
+
+  void _applyEntry(_NavEntry entry) {
+    final library = context.read<MusicLibrary>();
+    setState(() => _view = entry.view);
+    if (entry.playlist != null && library.selectedPlaylist?.id != entry.playlist!.id) {
+      library.selectPlaylist(entry.playlist!);
+    }
+    if (entry.view != NavView.search) {
+      _searchController.clear();
+      library.search('');
+    }
+  }
+
+  void _goBack() {
+    if (!_canGoBack) return;
+    _historyIndex--;
+    _applyEntry(_history[_historyIndex]);
+  }
+
+  void _goForward() {
+    if (!_canGoForward) return;
+    _historyIndex++;
+    _applyEntry(_history[_historyIndex]);
+  }
 
   void _goTo(NavView view) {
     setState(() => _view = view);
@@ -32,18 +84,22 @@ class _HomeScreenState extends State<HomeScreen> {
       _searchController.clear();
       context.read<MusicLibrary>().search('');
     }
+    _pushHistory(view);
   }
 
   void _openPlaylistByIndex(int index) {
     final library = context.read<MusicLibrary>();
     if (index < 0 || index >= library.playlists.length) return;
-    library.selectPlaylist(library.playlists[index]);
+    final playlist = library.playlists[index];
+    library.selectPlaylist(playlist);
     setState(() => _view = NavView.home);
+    _pushHistory(NavView.home, playlist: playlist);
   }
 
   void _openPlaylist(Playlist playlist) {
     context.read<MusicLibrary>().selectPlaylist(playlist);
     setState(() => _view = NavView.home);
+    _pushHistory(NavView.home, playlist: playlist);
   }
 
   @override
@@ -79,6 +135,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           controller: _searchController,
                           onNavSelect: _goTo,
                           onSearchChanged: library.search,
+                          onBack: _canGoBack ? _goBack : null,
+                          onForward: _canGoForward ? _goForward : null,
                         ),
                         Expanded(child: _buildContent(library)),
                       ],
@@ -114,12 +172,16 @@ class _TopBar extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<NavView> onNavSelect;
   final ValueChanged<String> onSearchChanged;
+  final VoidCallback? onBack;
+  final VoidCallback? onForward;
 
   const _TopBar({
     required this.view,
     required this.controller,
     required this.onNavSelect,
     required this.onSearchChanged,
+    this.onBack,
+    this.onForward,
   });
 
   @override
@@ -136,9 +198,9 @@ class _TopBar extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  _RoundButton(icon: Icons.chevron_left, onTap: () {}),
+                  _RoundButton(icon: Icons.chevron_left, onTap: onBack),
                   const SizedBox(width: 8),
-                  _RoundButton(icon: Icons.chevron_right, onTap: () {}),
+                  _RoundButton(icon: Icons.chevron_right, onTap: onForward),
                 ],
               ),
               // Центрируем группу навигационных виджетов относительно всей
@@ -153,7 +215,10 @@ class _TopBar extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 32 + 8 + 32), // баланс под левые кнопки
+              const SizedBox(
+                width: 32 + 8 + 32, // баланс под левые кнопки
+                child: Align(alignment: Alignment.centerRight, child: AccountAvatarButton()),
+              ),
             ],
           ),
           if (searching) ...[
@@ -335,19 +400,23 @@ class _GlassSurface extends StatelessWidget {
 
 class _RoundButton extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   const _RoundButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onTap != null;
     return InkWell(
       onTap: onTap,
       customBorder: const CircleBorder(),
       child: Container(
         width: 32,
         height: 32,
-        decoration: const BoxDecoration(color: Colors.black45, shape: BoxShape.circle),
-        child: Icon(icon, size: 20, color: Colors.white),
+        decoration: BoxDecoration(
+          color: enabled ? Colors.black45 : Colors.black26,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 20, color: enabled ? Colors.white : Colors.white38),
       ),
     );
   }
@@ -377,19 +446,36 @@ class _PlaylistContent extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(playlist.coverUrl, width: 160, height: 160, fit: BoxFit.cover,
-                      errorBuilder: (ctx, error, stackTrace) => Container(width: 160, height: 160, color: pal.surfaceHigh)),
+                  child: playlist.isVirtual
+                      ? Container(
+                          width: 160,
+                          height: 160,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF8395F0), Color(0xFFB33F86)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.favorite, color: Colors.white, size: 64),
+                          ),
+                        )
+                      : Image.network(playlist.coverUrl, width: 160, height: 160, fit: BoxFit.cover,
+                          errorBuilder: (ctx, error, stackTrace) => Container(width: 160, height: 160, color: pal.surfaceHigh)),
                 ),
                 const SizedBox(width: 20),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(s.playlistLabel, style: TextStyle(fontSize: 12, color: pal.textPrimary)),
+                    Text(playlist.isVirtual ? s.libraryLabel : s.playlistLabel,
+                        style: TextStyle(fontSize: 12, color: pal.textPrimary)),
                     const SizedBox(height: 8),
-                    Text(playlist.name,
+                    Text(playlist.isVirtual ? s.likedLibraryName : playlist.name,
                         style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: pal.textPrimary)),
                     const SizedBox(height: 8),
-                    Text(playlist.description, style: TextStyle(color: pal.textSecondary)),
+                    Text(playlist.isVirtual ? s.likedLibraryDescription : playlist.description,
+                        style: TextStyle(color: pal.textSecondary)),
                   ],
                 ),
               ],

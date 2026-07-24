@@ -7,11 +7,19 @@ class Playlist {
   final String coverUrl;
   final String description;
 
+  /// true для сущностей, которые собирает само приложение на клиенте, а не
+  /// бэкенд (например библиотека лайкнутых треков — концептуально это не
+  /// плейлист, а отдельная библиотека, но она использует ту же модель для
+  /// простоты отображения в общем списке/сетке). Такие записи не имеют
+  /// обложки от бэкенда — UI рисует для них собственную заглушку.
+  final bool isVirtual;
+
   const Playlist({
     required this.id,
     required this.name,
     required this.coverUrl,
     this.description = '',
+    this.isVirtual = false,
   });
 
   @override

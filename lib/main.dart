@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'auth/auth_controller.dart';
 import 'backend/audio_backend.dart';
 import 'backend/mock_audio_backend.dart';
 // import 'backend/yandex_storage_audio_backend.dart';
@@ -8,6 +9,7 @@ import 'backend/mock_audio_backend.dart';
 import 'library/music_library.dart';
 import 'localization/locale_controller.dart';
 import 'player/player_controller.dart';
+import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
@@ -38,9 +40,13 @@ class SpotifyCloneApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PlayerController(backend)),
         ChangeNotifierProvider(create: (_) => LocaleController()),
         ChangeNotifierProvider(create: (_) => ThemeController()),
+        // Аккаунт (вход/регистрация) — см. AuthGate ниже: пока пользователь
+        // не авторизован, показывается AuthScreen вместо HomeScreen.
+        ChangeNotifierProvider(create: (_) => AuthController()..init()),
       ],
       // Builder — чтобы context внутри уже видел провайдеры выше (в том
-      // числе ThemeController) при выборе themeMode для MaterialApp.
+      // числе ThemeController и AuthController) при выборе themeMode для
+      // MaterialApp.
       child: Builder(
         builder: (context) {
           final themeController = context.watch<ThemeController>();
@@ -50,10 +56,33 @@ class SpotifyCloneApp extends StatelessWidget {
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: themeController.mode,
-            home: const HomeScreen(),
+            home: const AuthGate(),
           );
         },
       ),
     );
+  }
+}
+
+/// Точка входа в приложение с точки зрения авторизации.
+///
+/// Пока сохранённая сессия ещё загружается — показывает индикатор.
+/// Дальше — либо AuthScreen (вход/регистрация), либо HomeScreen, если
+/// пользователь уже авторизован (в том числе автоматически, если сессия
+/// была сохранена с прошлого запуска).
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthController>();
+
+    if (!auth.isReady) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return auth.isLoggedIn ? const HomeScreen() : const AuthScreen();
   }
 }
