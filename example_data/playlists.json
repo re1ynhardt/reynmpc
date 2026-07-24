@@ -1,0 +1,14 @@
+[
+  {
+    "id": "pl_daily",
+    "name": "Daily Mix 1",
+    "cover": "covers/daily.jpg",
+    "description": "Подборка на каждый день"
+  },
+  {
+    "id": "pl_chill",
+    "name": "Chill Vibes",
+    "cover": "covers/chill.jpg",
+    "description": "Спокойное настроение"
+  }
+]

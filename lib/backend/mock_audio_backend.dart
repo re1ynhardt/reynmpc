@@ -1,0 +1,104 @@
+import '../models/playlist.dart';
+import '../models/track.dart';
+import 'audio_backend.dart';
+
+/// Мок-реализация [AudioBackend]: отдаёт захардкоженные данные с небольшой
+/// искусственной задержкой (имитация сети), чтобы UI сразу вёл себя как
+/// с настоящим бэкендом (лоадеры, асинхронность и т.д.).
+///
+/// Аудио-ссылки — открытые демо-треки (SoundHelix), просто чтобы плеер
+/// реально что-то проигрывал "из коробки".
+class MockAudioBackend implements AudioBackend {
+  static const _networkDelay = Duration(milliseconds: 350);
+
+  static const _demoUrls = [
+    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+    'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
+  ];
+
+  late final List<Playlist> _playlists = [
+    const Playlist(
+      id: 'pl_daily',
+      name: 'Daily Mix 1',
+      coverUrl: 'https://picsum.photos/seed/daily1/300',
+      description: 'Подборка на каждый день',
+    ),
+    const Playlist(
+      id: 'pl_chill',
+      name: 'Chill Vibes',
+      coverUrl: 'https://picsum.photos/seed/chill/300',
+      description: 'Спокойное настроение',
+    ),
+    const Playlist(
+      id: 'pl_focus',
+      name: 'Deep Focus',
+      coverUrl: 'https://picsum.photos/seed/focus/300',
+      description: 'Для концентрации',
+    ),
+    const Playlist(
+      id: 'pl_party',
+      name: 'Party Hits',
+      coverUrl: 'https://picsum.photos/seed/party/300',
+      description: 'Погромче',
+    ),
+  ];
+
+  late final Map<String, List<Track>> _tracksByPlaylist = {
+    'pl_daily': _makeTracks('daily', 'Daily Mix', 6),
+    'pl_chill': _makeTracks('chill', 'Chill Vibes', 5),
+    'pl_focus': _makeTracks('focus', 'Deep Focus', 5),
+    'pl_party': _makeTracks('party', 'Party Hits', 6),
+  };
+
+  List<Track> _makeTracks(String seed, String album, int count) {
+    final artists = ['Luna Wave', 'Neon Drift', 'Echo Park', 'Silver Fox', 'Aurora Beat'];
+    return List.generate(count, (i) {
+      final n = i + 1;
+      return Track(
+        id: '${seed}_$n',
+        title: '$album Track $n',
+        artist: artists[i % artists.length],
+        album: album,
+        duration: Duration(minutes: 2 + (i % 3), seconds: 15 * (i % 4)),
+        artworkUrl: 'https://picsum.photos/seed/$seed$n/300',
+        audioUrl: _demoUrls[(i + seed.length) % _demoUrls.length],
+      );
+    });
+  }
+
+  @override
+  Future<List<Playlist>> fetchPlaylists() async {
+    await Future.delayed(_networkDelay);
+    return _playlists;
+  }
+
+  @override
+  Future<List<Track>> fetchTracksForPlaylist(String playlistId) async {
+    await Future.delayed(_networkDelay);
+    return _tracksByPlaylist[playlistId] ?? const [];
+  }
+
+  @override
+  Future<List<Track>> searchTracks(String query) async {
+    await Future.delayed(_networkDelay);
+    final q = query.toLowerCase().trim();
+    if (q.isEmpty) return const [];
+    return _tracksByPlaylist.values
+        .expand((list) => list)
+        .where((t) =>
+            t.title.toLowerCase().contains(q) ||
+            t.artist.toLowerCase().contains(q) ||
+            t.album.toLowerCase().contains(q))
+        .toList();
+  }
+
+  @override
+  Future<String> resolveStreamUrl(Track track) async {
+    // В реальном бэкенде тут мог бы быть запрос за временным подписанным URL.
+    return track.audioUrl;
+  }
+}

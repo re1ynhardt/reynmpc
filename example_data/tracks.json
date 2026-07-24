@@ -1,0 +1,22 @@
+[
+  {
+    "id": "t1",
+    "title": "Night Drive",
+    "artist": "Luna Wave",
+    "album": "Daily Mix",
+    "durationSec": 215,
+    "cover": "covers/t1.jpg",
+    "audioKey": "audio/t1.mp3",
+    "playlistIds": ["pl_daily"]
+  },
+  {
+    "id": "t2",
+    "title": "Slow Motion",
+    "artist": "Echo Park",
+    "album": "Chill Vibes",
+    "durationSec": 198,
+    "cover": "covers/t2.jpg",
+    "audioKey": "audio/t2.mp3",
+    "playlistIds": ["pl_chill", "pl_daily"]
+  }
+]

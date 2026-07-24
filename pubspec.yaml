@@ -1,0 +1,29 @@
+name: spotify_flutter
+description: Десктопный аудиоплеер в стиле Spotify с подключаемым бэкендом
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Реальное воспроизведение аудио (потоки/файлы по URL)
+  just_audio: ^0.9.40
+
+  # Простой и предсказуемый state management
+  provider: ^6.1.2
+
+  # S3-совместимый клиент — им же читаем Yandex Object Storage
+  minio: ^3.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
