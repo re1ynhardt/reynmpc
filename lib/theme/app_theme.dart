@@ -1,38 +1,198 @@
 import 'package:flutter/material.dart';
 
+/// Цветовая палитра приложения для одной конкретной темы.
+///
+/// Подключается в [ThemeData] как [ThemeExtension] — это значит, что она
+/// живёт внутри `Theme.of(context)` и переключение темы (тёмная/светлая)
+/// сразу отражается во всём дереве виджетов, без ручной синхронизации.
+/// Виджеты берут цвета через `AppColors.of(context)` вместо старых
+/// статических констант.
+class AppPalette extends ThemeExtension<AppPalette> {
+  final Color background;
+  final Color surface;
+  final Color surfaceHigh;
+  final Color sidebar;
+  final Color accent; // акцентный цвет (кнопка play, активные элементы)
+  final Color onAccent; // цвет иконки/текста поверх accent
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color divider;
+  final Color hoverOverlay;
+  final Color sliderInactive;
+  final Color glassFill;
+  final Color glassFillStrong;
+  final Color glassBorder;
+  final Color glassBorderStrong;
+  final Color glassShadow;
+  final Color scrollbarThumb;
+
+  const AppPalette({
+    required this.background,
+    required this.surface,
+    required this.surfaceHigh,
+    required this.sidebar,
+    required this.accent,
+    required this.onAccent,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.divider,
+    required this.hoverOverlay,
+    required this.sliderInactive,
+    required this.glassFill,
+    required this.glassFillStrong,
+    required this.glassBorder,
+    required this.glassBorderStrong,
+    required this.glassShadow,
+    required this.scrollbarThumb,
+  });
+
+  static const dark = AppPalette(
+    background: Color(0xFF000000),
+    surface: Color(0xFF0A0A0A),
+    surfaceHigh: Color(0xFF1A1A1A),
+    sidebar: Color(0xFF000000),
+    accent: Color(0xFF1DB954),
+    onAccent: Colors.black,
+    textPrimary: Colors.white,
+    textSecondary: Color(0xFFB3B3B3),
+    divider: Colors.white12,
+    hoverOverlay: Color(0x0FFFFFFF), // белый, ~6% непрозрачности
+    sliderInactive: Colors.white24,
+    glassFill: Color(0x1AFFFFFF), // белый, ~10%
+    glassFillStrong: Color(0x2EFFFFFF), // белый, ~18%
+    glassBorder: Color(0x29FFFFFF), // белый, ~16%
+    glassBorderStrong: Color(0x47FFFFFF), // белый, ~28%
+    glassShadow: Color(0x40000000), // чёрный, ~25%
+    scrollbarThumb: Colors.white24,
+  );
+
+  static const light = AppPalette(
+    background: Color(0xFFF7F7F7),
+    surface: Color(0xFFFFFFFF),
+    surfaceHigh: Color(0xFFE9E9EC),
+    sidebar: Color(0xFFFFFFFF),
+    accent: Color(0xFF1DB954),
+    onAccent: Colors.black,
+    textPrimary: Color(0xFF121212),
+    textSecondary: Color(0xFF5E5E5E),
+    divider: Colors.black12,
+    hoverOverlay: Color(0x0A000000), // чёрный, ~4%
+    sliderInactive: Colors.black26,
+    glassFill: Color(0x14000000), // чёрный, ~8%
+    glassFillStrong: Color(0x1F000000), // чёрный, ~12%
+    glassBorder: Color(0x1F000000), // чёрный, ~12%
+    glassBorderStrong: Color(0x33000000), // чёрный, ~20%
+    glassShadow: Color(0x26000000), // чёрный, ~15%
+    scrollbarThumb: Colors.black26,
+  );
+
+  @override
+  AppPalette copyWith({
+    Color? background,
+    Color? surface,
+    Color? surfaceHigh,
+    Color? sidebar,
+    Color? accent,
+    Color? onAccent,
+    Color? textPrimary,
+    Color? textSecondary,
+    Color? divider,
+    Color? hoverOverlay,
+    Color? sliderInactive,
+    Color? glassFill,
+    Color? glassFillStrong,
+    Color? glassBorder,
+    Color? glassBorderStrong,
+    Color? glassShadow,
+    Color? scrollbarThumb,
+  }) {
+    return AppPalette(
+      background: background ?? this.background,
+      surface: surface ?? this.surface,
+      surfaceHigh: surfaceHigh ?? this.surfaceHigh,
+      sidebar: sidebar ?? this.sidebar,
+      accent: accent ?? this.accent,
+      onAccent: onAccent ?? this.onAccent,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textSecondary: textSecondary ?? this.textSecondary,
+      divider: divider ?? this.divider,
+      hoverOverlay: hoverOverlay ?? this.hoverOverlay,
+      sliderInactive: sliderInactive ?? this.sliderInactive,
+      glassFill: glassFill ?? this.glassFill,
+      glassFillStrong: glassFillStrong ?? this.glassFillStrong,
+      glassBorder: glassBorder ?? this.glassBorder,
+      glassBorderStrong: glassBorderStrong ?? this.glassBorderStrong,
+      glassShadow: glassShadow ?? this.glassShadow,
+      scrollbarThumb: scrollbarThumb ?? this.scrollbarThumb,
+    );
+  }
+
+  @override
+  AppPalette lerp(ThemeExtension<AppPalette>? other, double t) {
+    if (other is! AppPalette) return this;
+    return AppPalette(
+      background: Color.lerp(background, other.background, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      surfaceHigh: Color.lerp(surfaceHigh, other.surfaceHigh, t)!,
+      sidebar: Color.lerp(sidebar, other.sidebar, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+      onAccent: Color.lerp(onAccent, other.onAccent, t)!,
+      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
+      textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
+      divider: Color.lerp(divider, other.divider, t)!,
+      hoverOverlay: Color.lerp(hoverOverlay, other.hoverOverlay, t)!,
+      sliderInactive: Color.lerp(sliderInactive, other.sliderInactive, t)!,
+      glassFill: Color.lerp(glassFill, other.glassFill, t)!,
+      glassFillStrong: Color.lerp(glassFillStrong, other.glassFillStrong, t)!,
+      glassBorder: Color.lerp(glassBorder, other.glassBorder, t)!,
+      glassBorderStrong: Color.lerp(glassBorderStrong, other.glassBorderStrong, t)!,
+      glassShadow: Color.lerp(glassShadow, other.glassShadow, t)!,
+      scrollbarThumb: Color.lerp(scrollbarThumb, other.scrollbarThumb, t)!,
+    );
+  }
+}
+
+/// Точка доступа к палитре текущей темы из виджетов:
+/// `AppColors.of(context).textSecondary` вместо старого
+/// `AppColors.textSecondary`. Также оставлен статический [green] —
+/// акцентный цвет бренда одинаков в обеих темах и используется в местах,
+/// где BuildContext неудобен (например, в CustomPainter).
 class AppColors {
-  static const background = Color(0xFF121212);
-  static const surface = Color(0xFF181818);
-  static const surfaceHigh = Color(0xFF242424);
-  static const sidebar = Color(0xFF000000);
+  AppColors._();
+
   static const green = Color(0xFF1DB954);
-  static const textPrimary = Color(0xFFFFFFFF);
-  static const textSecondary = Color(0xFFB3B3B3);
+
+  static AppPalette of(BuildContext context) {
+    return Theme.of(context).extension<AppPalette>() ?? AppPalette.dark;
+  }
 }
 
 class AppTheme {
-  static ThemeData get dark {
+  static ThemeData _themeFor(AppPalette palette, Brightness brightness) {
     return ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.background,
+      brightness: brightness,
+      scaffoldBackgroundColor: palette.background,
       fontFamily: 'Helvetica',
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.green,
-        surface: AppColors.surface,
-      ),
+      extensions: [palette],
+      colorScheme: brightness == Brightness.dark
+          ? ColorScheme.dark(primary: palette.accent, surface: palette.surface)
+          : ColorScheme.light(primary: palette.accent, surface: palette.surface),
       sliderTheme: const SliderThemeData(
         trackHeight: 4,
         thumbShape: RoundSliderThumbShape(enabledThumbRadius: 5),
         overlayShape: RoundSliderOverlayShape(overlayRadius: 12),
       ),
-      textTheme: const TextTheme(
-        bodyMedium: TextStyle(color: AppColors.textPrimary),
-        bodySmall: TextStyle(color: AppColors.textSecondary),
+      textTheme: TextTheme(
+        bodyMedium: TextStyle(color: palette.textPrimary),
+        bodySmall: TextStyle(color: palette.textSecondary),
       ),
-      iconTheme: const IconThemeData(color: AppColors.textPrimary),
+      iconTheme: IconThemeData(color: palette.textPrimary),
       scrollbarTheme: ScrollbarThemeData(
-        thumbColor: WidgetStateProperty.all(Colors.white24),
+        thumbColor: WidgetStateProperty.all(palette.scrollbarThumb),
       ),
     );
   }
+
+  static ThemeData get dark => _themeFor(AppPalette.dark, Brightness.dark);
+  static ThemeData get light => _themeFor(AppPalette.light, Brightness.light);
 }

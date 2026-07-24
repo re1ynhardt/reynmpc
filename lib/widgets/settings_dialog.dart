@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../localization/app_language.dart';
 import '../localization/locale_controller.dart';
 import '../theme/app_theme.dart';
+import '../theme/theme_controller.dart';
 
 class SettingsDialog extends StatelessWidget {
   const SettingsDialog({super.key});
@@ -11,10 +12,12 @@ class SettingsDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleController>();
+    final themeController = context.watch<ThemeController>();
+    final pal = AppColors.of(context);
     final s = locale.s;
 
     return Dialog(
-      backgroundColor: AppColors.surfaceHigh,
+      backgroundColor: pal.surfaceHigh,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 360),
@@ -29,18 +32,36 @@ class SettingsDialog extends StatelessWidget {
                 children: [
                   Text(
                     s.settingsTitle,
-                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: pal.textPrimary, fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                    icon: Icon(Icons.close, color: pal.textSecondary),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
               Text(
+                s.themeLabel,
+                style: TextStyle(color: pal.textSecondary, fontSize: 12, letterSpacing: 1),
+              ),
+              const SizedBox(height: 8),
+              _ThemeOption(
+                label: s.themeDark,
+                icon: Icons.dark_mode_outlined,
+                selected: themeController.mode == ThemeMode.dark,
+                onTap: () => themeController.setMode(ThemeMode.dark),
+              ),
+              _ThemeOption(
+                label: s.themeLight,
+                icon: Icons.light_mode_outlined,
+                selected: themeController.mode == ThemeMode.light,
+                onTap: () => themeController.setMode(ThemeMode.light),
+              ),
+              const SizedBox(height: 16),
+              Text(
                 s.languageLabel,
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, letterSpacing: 1),
+                style: TextStyle(color: pal.textSecondary, fontSize: 12, letterSpacing: 1),
               ),
               const SizedBox(height: 8),
               _LanguageOption(
@@ -69,15 +90,22 @@ class SettingsDialog extends StatelessWidget {
   }
 }
 
-class _LanguageOption extends StatelessWidget {
+class _ThemeOption extends StatelessWidget {
   final String label;
+  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
-  const _LanguageOption({required this.label, required this.selected, required this.onTap});
+  const _ThemeOption({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final pal = AppColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -89,14 +117,56 @@ class _LanguageOption extends StatelessWidget {
             children: [
               Icon(
                 selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                color: selected ? AppColors.green : AppColors.textSecondary,
+                color: selected ? AppColors.green : pal.textSecondary,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Icon(icon, size: 18, color: selected ? pal.textPrimary : pal.textSecondary),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? pal.textPrimary : pal.textSecondary,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguageOption extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _LanguageOption({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = AppColors.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          child: Row(
+            children: [
+              Icon(
+                selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                color: selected ? AppColors.green : pal.textSecondary,
                 size: 20,
               ),
               const SizedBox(width: 12),
               Text(
                 label,
                 style: TextStyle(
-                  color: selected ? Colors.white : AppColors.textSecondary,
+                  color: selected ? pal.textPrimary : pal.textSecondary,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),

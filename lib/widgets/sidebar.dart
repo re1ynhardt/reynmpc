@@ -3,18 +3,20 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../library/music_library.dart';
 import '../localization/locale_controller.dart';
 import '../models/nav_view.dart';
 import '../theme/app_theme.dart';
 import 'settings_dialog.dart';
 
+/// Урезанный сайдбар: только логотип сверху и настройки снизу.
+/// Навигация (Главная / Поиск / Моя медиатека) и список плейлистов
+/// переехали в виджеты по центру верхней панели — см. HomeScreen._TopBar.
 class Sidebar extends StatelessWidget {
   final NavView activeView;
   final ValueChanged<NavView> onNavSelect;
 
-  /// Вызывается, когда выбрали конкретный плейлист из списка внизу сайдбара —
-  /// экран должен переключиться на "Главная" с открытым плейлистом.
+  /// Оставлен для совместимости с вызывающим кодом — плейлисты
+  /// в сайдбаре больше не отображаются.
   final ValueChanged<int> onPlaylistTap;
 
   const Sidebar({
@@ -26,146 +28,48 @@ class Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final library = context.watch<MusicLibrary>();
     final s = context.watch<LocaleController>().s;
+    final pal = AppColors.of(context);
 
     return Container(
-      width: 240,
-      color: AppColors.sidebar,
+      width: 88,
+      color: pal.sidebar,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 24),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                _LogoMark(size: 28),
-                SizedBox(width: 8),
-                Text(
-                  'ReynM',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-              ],
-            ),
+          _LogoMark(size: 32, noteColor: pal.textPrimary),
+          const SizedBox(height: 6),
+          Text(
+            'ReynM',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: pal.textPrimary, letterSpacing: 0.5),
           ),
-          const SizedBox(height: 24),
-          _NavItem(
-            icon: Icons.home_filled,
-            label: s.navHome,
-            selected: activeView == NavView.home,
-            onTap: () => onNavSelect(NavView.home),
-          ),
-          _NavItem(
-            icon: Icons.search,
-            label: s.navSearch,
-            selected: activeView == NavView.search,
-            onTap: () => onNavSelect(NavView.search),
-          ),
-          _NavItem(
-            icon: Icons.library_music,
-            label: s.navLibrary,
-            selected: activeView == NavView.library,
-            onTap: () => onNavSelect(NavView.library),
-          ),
-          const SizedBox(height: 20),
+          const Spacer(),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: const Divider(color: Colors.white12, height: 1),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text(s.playlistsHeader, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, letterSpacing: 1)),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: library.isLoadingPlaylists
-                ? const Center(child: CircularProgressIndicator(color: AppColors.green))
-                : ListView.builder(
-                    itemCount: library.playlists.length,
-                    itemBuilder: (context, i) {
-                      final playlist = library.playlists[i];
-                      final selected = activeView == NavView.home && library.selectedPlaylist?.id == playlist.id;
-                      return ListTile(
-                        dense: true,
-                        selected: selected,
-                        selectedTileColor: AppColors.surfaceHigh,
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.network(playlist.coverUrl, width: 36, height: 36, fit: BoxFit.cover,
-                              errorBuilder: (ctx, error, stackTrace) => Container(width: 36, height: 36, color: AppColors.surfaceHigh)),
-                        ),
-                        title: Text(
-                          playlist.name,
-                          style: TextStyle(
-                            color: selected ? Colors.white : AppColors.textSecondary,
-                            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        onTap: () => onPlaylistTap(i),
-                      );
-                    },
-                  ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Divider(color: Colors.white12, height: 1),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.only(bottom: 20),
             child: Material(
               color: Colors.transparent,
-              child: ListTile(
-                dense: true,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                leading: const Icon(Icons.settings_outlined, color: AppColors.textSecondary, size: 22),
-                title: Text(s.settings, style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
                 onTap: () => showDialog(context: context, builder: (_) => const SettingsDialog()),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.settings_outlined, color: pal.textSecondary, size: 22),
+                      const SizedBox(height: 4),
+                      Text(
+                        s.settings,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: pal.textSecondary, fontSize: 10, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.selected = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Material(
-        color: Colors.transparent,
-        child: ListTile(
-          dense: true,
-          selected: selected,
-          selectedTileColor: AppColors.surfaceHigh,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-          leading: Icon(icon, color: selected ? Colors.white : AppColors.textSecondary, size: 22),
-          title: Text(
-            label,
-            style: TextStyle(
-              color: selected ? Colors.white : AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          onTap: onTap,
-        ),
       ),
     );
   }
@@ -176,12 +80,9 @@ class _NavItem extends StatelessWidget {
 /// Фон и надпись "" из исходника сюда намеренно не перенесены.
 class _LogoMark extends StatelessWidget {
   final double size;
+  final Color noteColor;
 
-  const _LogoMark({required this.size});
-
-  // NB: constructor above is const on purpose — the surrounding widget tree
-  // (Padding/Row in Sidebar.build) is a `const` literal, so every child
-  // constructor in that subtree must be const-invokable.
+  const _LogoMark({required this.size, this.noteColor = Colors.white});
 
   @override
   Widget build(BuildContext context) {
@@ -191,7 +92,7 @@ class _LogoMark extends StatelessWidget {
       child: CustomPaint(
         painter: const _RingPainter(),
         child: Center(
-          child: Icon(Icons.music_note, color: Colors.white, size: size * 0.5),
+          child: Icon(Icons.music_note, color: noteColor, size: size * 0.5),
         ),
       ),
     );

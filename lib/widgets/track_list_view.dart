@@ -21,6 +21,7 @@ class TrackListView extends StatelessWidget {
   Widget build(BuildContext context) {
     final player = context.watch<PlayerController>();
     final s = context.watch<LocaleController>().s;
+    final pal = AppColors.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -29,18 +30,18 @@ class TrackListView extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Row(
             children: [
-              const SizedBox(width: 32, child: Text('#', style: TextStyle(color: AppColors.textSecondary))),
+              SizedBox(width: 32, child: Text('#', style: TextStyle(color: pal.textSecondary))),
               const SizedBox(width: 12),
-              Expanded(flex: 4, child: Text(s.columnTitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12))),
-              Expanded(flex: 3, child: Text(s.columnAlbum, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12))),
-              const Icon(Icons.access_time, size: 16, color: AppColors.textSecondary),
+              Expanded(flex: 4, child: Text(s.columnTitle, style: TextStyle(color: pal.textSecondary, fontSize: 12))),
+              Expanded(flex: 3, child: Text(s.columnAlbum, style: TextStyle(color: pal.textSecondary, fontSize: 12))),
+              Icon(Icons.access_time, size: 16, color: pal.textSecondary),
               const SizedBox(width: 24),
             ],
           ),
         ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
-          child: Divider(color: Colors.white12, height: 1),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Divider(color: pal.divider, height: 1),
         ),
         ...List.generate(tracks.length, (i) {
           final track = tracks[i];
@@ -85,7 +86,8 @@ class _TrackRowState extends State<_TrackRow> {
 
   @override
   Widget build(BuildContext context) {
-    final titleColor = widget.isCurrent ? AppColors.green : Colors.white;
+    final pal = AppColors.of(context);
+    final titleColor = widget.isCurrent ? pal.accent : pal.textPrimary;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovering = true),
@@ -93,15 +95,15 @@ class _TrackRowState extends State<_TrackRow> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: Container(
-          color: _hovering ? Colors.white.withValues(alpha: 0.06) : Colors.transparent,
+          color: _hovering ? pal.hoverOverlay : Colors.transparent,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Row(
             children: [
               SizedBox(
                 width: 32,
                 child: _hovering
-                    ? Icon(widget.isPlaying ? Icons.pause : Icons.play_arrow, size: 18, color: Colors.white)
-                    : Text('${widget.index}', style: const TextStyle(color: AppColors.textSecondary)),
+                    ? Icon(widget.isPlaying ? Icons.pause : Icons.play_arrow, size: 18, color: pal.textPrimary)
+                    : Text('${widget.index}', style: TextStyle(color: pal.textSecondary)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -111,7 +113,7 @@ class _TrackRowState extends State<_TrackRow> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(4),
                       child: Image.network(widget.track.artworkUrl, width: 40, height: 40, fit: BoxFit.cover,
-                          errorBuilder: (ctx, error, stackTrace) => Container(width: 40, height: 40, color: AppColors.surfaceHigh)),
+                          errorBuilder: (ctx, error, stackTrace) => Container(width: 40, height: 40, color: pal.surfaceHigh)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -126,7 +128,7 @@ class _TrackRowState extends State<_TrackRow> {
                           Text(widget.track.artist,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                              style: TextStyle(color: pal.textSecondary, fontSize: 13)),
                         ],
                       ),
                     ),
@@ -136,9 +138,9 @@ class _TrackRowState extends State<_TrackRow> {
               Expanded(
                 flex: 3,
                 child: Text(widget.track.album,
-                    maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textSecondary)),
+                    maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: pal.textSecondary)),
               ),
-              Text(widget.durationLabel, style: const TextStyle(color: AppColors.textSecondary)),
+              Text(widget.durationLabel, style: TextStyle(color: pal.textSecondary)),
               const SizedBox(width: 24),
             ],
           ),

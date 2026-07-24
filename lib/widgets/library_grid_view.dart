@@ -20,8 +20,9 @@ class LibraryGridView extends StatelessWidget {
   Widget build(BuildContext context) {
     if (playlists.isEmpty) {
       final s = context.watch<LocaleController>().s;
+      final pal = AppColors.of(context);
       return Center(
-        child: Text(s.libraryEmpty, style: const TextStyle(color: AppColors.textSecondary)),
+        child: Text(s.libraryEmpty, style: TextStyle(color: pal.textSecondary)),
       );
     }
 
@@ -57,6 +58,7 @@ class _LibraryCardState extends State<_LibraryCard> {
 
   @override
   Widget build(BuildContext context) {
+    final pal = AppColors.of(context);
     return MouseRegion(
       onEnter: (_) => setState(() => _hovering = true),
       onExit: (_) => setState(() => _hovering = false),
@@ -66,7 +68,7 @@ class _LibraryCardState extends State<_LibraryCard> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: _hovering ? AppColors.surfaceHigh : AppColors.surface,
+            color: _hovering ? pal.surfaceHigh : pal.surface,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -82,7 +84,7 @@ class _LibraryCardState extends State<_LibraryCard> {
                       child: Image.network(
                         widget.playlist.coverUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (ctx, error, stackTrace) => Container(color: AppColors.surfaceHigh),
+                        errorBuilder: (ctx, error, stackTrace) => Container(color: pal.surfaceHigh),
                       ),
                     ),
                   ),
@@ -90,9 +92,9 @@ class _LibraryCardState extends State<_LibraryCard> {
                     Padding(
                       padding: const EdgeInsets.all(8),
                       child: Container(
-                        decoration: const BoxDecoration(color: AppColors.green, shape: BoxShape.circle),
+                        decoration: BoxDecoration(color: pal.accent, shape: BoxShape.circle),
                         padding: const EdgeInsets.all(8),
-                        child: const Icon(Icons.play_arrow, color: Colors.black, size: 20),
+                        child: Icon(Icons.play_arrow, color: pal.onAccent, size: 20),
                       ),
                     ),
                 ],
@@ -102,14 +104,14 @@ class _LibraryCardState extends State<_LibraryCard> {
                 widget.playlist.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                style: TextStyle(color: pal.textPrimary, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 4),
               Text(
                 widget.playlist.description,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                style: TextStyle(color: pal.textSecondary, fontSize: 12),
               ),
             ],
           ),

@@ -21,6 +21,9 @@ abstract class AppStrings {
   String get languageLabel;
   String get languageRu;
   String get languageEn;
+  String get themeLabel;
+  String get themeDark;
+  String get themeLight;
   String get close;
 
   static AppStrings of(AppLanguage lang) {
@@ -69,6 +72,12 @@ class _StringsRu implements AppStrings {
   @override
   String get languageEn => 'English';
   @override
+  String get themeLabel => 'Тема';
+  @override
+  String get themeDark => 'Тёмная';
+  @override
+  String get themeLight => 'Светлая';
+  @override
   String get close => 'Закрыть';
 }
 
@@ -107,6 +116,12 @@ class _StringsEn implements AppStrings {
   String get languageRu => 'Русский';
   @override
   String get languageEn => 'English';
+  @override
+  String get themeLabel => 'Theme';
+  @override
+  String get themeDark => 'Dark';
+  @override
+  String get themeLight => 'Light';
   @override
   String get close => 'Close';
 }

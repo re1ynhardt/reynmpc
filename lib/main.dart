@@ -10,6 +10,7 @@ import 'localization/locale_controller.dart';
 import 'player/player_controller.dart';
 import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_controller.dart';
 
 void main() {
   // 👇 Подключение бэкенда — ОДНА строка.
@@ -36,12 +37,22 @@ class SpotifyCloneApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MusicLibrary(backend)),
         ChangeNotifierProvider(create: (_) => PlayerController(backend)),
         ChangeNotifierProvider(create: (_) => LocaleController()),
+        ChangeNotifierProvider(create: (_) => ThemeController()),
       ],
-      child: MaterialApp(
-        title: 'Fluttify',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.dark,
-        home: const HomeScreen(),
+      // Builder — чтобы context внутри уже видел провайдеры выше (в том
+      // числе ThemeController) при выборе themeMode для MaterialApp.
+      child: Builder(
+        builder: (context) {
+          final themeController = context.watch<ThemeController>();
+          return MaterialApp(
+            title: 'Fluttify',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: themeController.mode,
+            home: const HomeScreen(),
+          );
+        },
       ),
     );
   }

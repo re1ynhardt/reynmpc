@@ -18,10 +18,11 @@ class PlayerBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final player = context.watch<PlayerController>();
     final track = player.currentTrack;
+    final pal = AppColors.of(context);
 
     return Container(
       height: 90,
-      color: AppColors.surface,
+      color: pal.surface,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
@@ -35,7 +36,7 @@ class PlayerBar extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: Image.network(track.artworkUrl, width: 56, height: 56, fit: BoxFit.cover,
-                            errorBuilder: (ctx, error, stackTrace) => Container(width: 56, height: 56, color: AppColors.surfaceHigh)),
+                            errorBuilder: (ctx, error, stackTrace) => Container(width: 56, height: 56, color: pal.surfaceHigh)),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -44,15 +45,16 @@ class PlayerBar extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(track.title,
-                                maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w500)),
+                                maxLines: 1, overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontWeight: FontWeight.w500, color: pal.textPrimary)),
                             Text(track.artist,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                style: TextStyle(color: pal.textSecondary, fontSize: 12)),
                           ],
                         ),
                       ),
-                      const Icon(Icons.favorite_border, size: 18, color: AppColors.textSecondary),
+                      Icon(Icons.favorite_border, size: 18, color: pal.textSecondary),
                     ],
                   ),
           ),
@@ -66,33 +68,33 @@ class PlayerBar extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.shuffle, size: 18, color: player.shuffle ? AppColors.green : AppColors.textSecondary),
+                      icon: Icon(Icons.shuffle, size: 18, color: player.shuffle ? pal.accent : pal.textSecondary),
                       onPressed: player.toggleShuffle,
                     ),
                     IconButton(
-                      icon: const Icon(Icons.skip_previous, size: 22),
+                      icon: Icon(Icons.skip_previous, size: 22, color: pal.textPrimary),
                       onPressed: player.previous,
                     ),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
-                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: pal.textPrimary, shape: BoxShape.circle),
                       child: IconButton(
                         icon: player.isLoading
-                            ? const SizedBox(
-                                width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                            : Icon(player.isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.black),
+                            ? SizedBox(
+                                width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: pal.background))
+                            : Icon(player.isPlaying ? Icons.pause : Icons.play_arrow, color: pal.background),
                         onPressed: player.hasTrack ? player.togglePlayPause : null,
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.skip_next, size: 22),
+                      icon: Icon(Icons.skip_next, size: 22, color: pal.textPrimary),
                       onPressed: player.next,
                     ),
                     IconButton(
                       icon: Icon(
                         player.repeatMode == PlayerRepeatMode.one ? Icons.repeat_one : Icons.repeat,
                         size: 18,
-                        color: player.repeatMode == PlayerRepeatMode.off ? AppColors.textSecondary : AppColors.green,
+                        color: player.repeatMode == PlayerRepeatMode.off ? pal.textSecondary : pal.accent,
                       ),
                       onPressed: player.cycleRepeatMode,
                     ),
@@ -100,13 +102,13 @@ class PlayerBar extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    Text(_fmt(player.position), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                    Text(_fmt(player.position), style: TextStyle(fontSize: 11, color: pal.textSecondary)),
                     Expanded(
                       child: SliderTheme(
                         data: SliderTheme.of(context).copyWith(
-                          activeTrackColor: Colors.white,
-                          inactiveTrackColor: Colors.white24,
-                          thumbColor: Colors.white,
+                          activeTrackColor: pal.textPrimary,
+                          inactiveTrackColor: pal.sliderInactive,
+                          thumbColor: pal.textPrimary,
                         ),
                         child: Slider(
                           min: 0,
@@ -120,7 +122,7 @@ class PlayerBar extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Text(_fmt(player.duration), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                    Text(_fmt(player.duration), style: TextStyle(fontSize: 11, color: pal.textSecondary)),
                   ],
                 ),
               ],
@@ -132,13 +134,13 @@ class PlayerBar extends StatelessWidget {
             width: 180,
             child: Row(
               children: [
-                const Icon(Icons.volume_up, size: 18, color: AppColors.textSecondary),
+                Icon(Icons.volume_up, size: 18, color: pal.textSecondary),
                 Expanded(
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: Colors.white,
-                      inactiveTrackColor: Colors.white24,
-                      thumbColor: Colors.white,
+                      activeTrackColor: pal.textPrimary,
+                      inactiveTrackColor: pal.sliderInactive,
+                      thumbColor: pal.textPrimary,
                     ),
                     child: Slider(
                       min: 0,
