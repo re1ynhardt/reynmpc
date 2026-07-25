@@ -47,22 +47,22 @@ class AppPalette extends ThemeExtension<AppPalette> {
   });
 
   static const dark = AppPalette(
-    background: Color(0xFF000000),
-    surface: Color(0xFF0A0A0A),
-    surfaceHigh: Color(0xFF1A1A1A),
-    sidebar: Color(0xFF000000),
-    accent: Color(0xFF1DB954),
+    background: Color(0xFF121212), // не чистый чёрный — мягче для глаз
+    surface: Color(0xFF181818),
+    surfaceHigh: Color(0xFF282828), // заметно светлее — даёт ощущение слоёв
+    sidebar: Color(0xFF0A0A0A), // чуть темнее фона — сайдбар "утоплен"
+    accent: Color(0xFFE0294B),
     onAccent: Colors.black,
-    textPrimary: Colors.white,
-    textSecondary: Color(0xFFB3B3B3),
+    textPrimary: Color(0xFFF2F2F2), // не чистый белый — меньше режет глаз
+    textSecondary: Color(0xFFA7A7A7),
     divider: Colors.white12,
-    hoverOverlay: Color(0x0FFFFFFF), // белый, ~6% непрозрачности
+    hoverOverlay: Color(0x14FFFFFF), // белый, ~8% непрозрачности
     sliderInactive: Colors.white24,
-    glassFill: Color(0x1AFFFFFF), // белый, ~10%
-    glassFillStrong: Color(0x2EFFFFFF), // белый, ~18%
-    glassBorder: Color(0x29FFFFFF), // белый, ~16%
-    glassBorderStrong: Color(0x47FFFFFF), // белый, ~28%
-    glassShadow: Color(0x40000000), // чёрный, ~25%
+    glassFill: Color(0x1FFFFFFF), // белый, ~12%
+    glassFillStrong: Color(0x33FFFFFF), // белый, ~20%
+    glassBorder: Color(0x2EFFFFFF), // белый, ~18%
+    glassBorderStrong: Color(0x52FFFFFF), // белый, ~32%
+    glassShadow: Color(0x59000000), // чёрный, ~35% — глубже тень на светлом фоне
     scrollbarThumb: Colors.white24,
   );
 
@@ -71,7 +71,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     surface: Color(0xFFFFFFFF),
     surfaceHigh: Color(0xFFE9E9EC),
     sidebar: Color(0xFFFFFFFF),
-    accent: Color(0xFF1DB954),
+    accent: Color(0xFFE0294B),
     onAccent: Colors.black,
     textPrimary: Color(0xFF121212),
     textSecondary: Color(0xFF5E5E5E),
@@ -154,13 +154,12 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
 /// Точка доступа к палитре текущей темы из виджетов:
 /// `AppColors.of(context).textSecondary` вместо старого
-/// `AppColors.textSecondary`. Также оставлен статический [green] —
+/// `AppColors.textSecondary`. Также оставлен статический [red] —
 /// акцентный цвет бренда одинаков в обеих темах и используется в местах,
 /// где BuildContext неудобен (например, в CustomPainter).
 class AppColors {
   AppColors._();
 
-  static const green = Color(0xFF1DB954);
   static const red = Color(0xFFE0294B);
 
   static AppPalette of(BuildContext context) {

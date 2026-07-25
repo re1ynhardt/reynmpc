@@ -9,7 +9,6 @@ import '../models/track.dart';
 /// UI никогда не обращается к бэкенду напрямую — только через этот класс.
 class MusicLibrary extends ChangeNotifier {
   MusicLibrary(this._backend) {
-    _loadPlaylists();
     _loadAllTracks();
   }
 
@@ -17,6 +16,9 @@ class MusicLibrary extends ChangeNotifier {
 
   /// Сколько треков показываем на Главной.
   static const homeTracksLimit = 100;
+
+  /// Максимум треков, показываемых в результатах поиска.
+  static const searchResultsLimit = 50;
 
   /// Специальная клиентская библиотека со всеми лайкнутыми треками —
   /// это НЕ плейлист (у неё нет привычных плейлисту атрибутов вроде
@@ -132,13 +134,22 @@ class MusicLibrary extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadPlaylists() async {
+  /// Вызывается при входе/выходе из аккаунта (см. AuthGate в main.dart),
+  /// как и [loadFavoritesForUser] — иначе после смены пользователя в
+  /// медиатеке продолжали бы висеть плейлисты предыдущего аккаунта.
+  Future<void> loadPlaylistsForUser(String? userId) async {
     isLoadingPlaylists = true;
     notifyListeners();
-    final fetched = await _backend.fetchPlaylists();
+    final fetched = await _backend.fetchPlaylists(userId);
     // "Мои лайкнутые" всегда первым пунктом в медиатеке, как в Spotify.
     playlists = [likedPlaylist, ...fetched];
     isLoadingPlaylists = false;
+    if (selectedPlaylist != null && selectedPlaylist!.id != likedPlaylistId &&
+        !playlists.any((p) => p.id == selectedPlaylist!.id)) {
+      // Открытый плейлист принадлежал предыдущему пользователю — закрываем.
+      selectedPlaylist = null;
+      tracksOfSelectedPlaylist = [];
+    }
     // Плейлист больше не выбирается автоматически — по умолчанию Главная
     // показывает первые [homeTracksLimit] всех треков (см. [homeTracks]).
     notifyListeners();
@@ -208,6 +219,42 @@ class MusicLibrary extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Добавляет трек в плейлист (кроме виртуальной библиотеки лайкнутых —
+  /// туда попадают только через [toggleLike]). Если этот плейлист сейчас
+  /// открыт — сразу дописывает трек в отображаемый список, не дожидаясь
+  /// повторного похода в бэкенд.
+  Future<void> addTrackToPlaylist(Track track, Playlist playlist) async {
+    if (playlist.isVirtual) return;
+
+    await _backend.addTrackToPlaylist(playlist.id, track.id);
+
+    if (selectedPlaylist?.id == playlist.id && !tracksOfSelectedPlaylist.any((t) => t.id == track.id)) {
+      tracksOfSelectedPlaylist = [...tracksOfSelectedPlaylist, track];
+      notifyListeners();
+    }
+  }
+
+  /// Убирает трек из плейлиста — используется для повторного нажатия в
+  /// меню "Добавить в плейлист" (см. [playlistIdsContainingTrack]).
+  Future<void> removeTrackFromPlaylist(Track track, Playlist playlist) async {
+    if (playlist.isVirtual) return;
+
+    await _backend.removeTrackFromPlaylist(playlist.id, track.id);
+
+    if (selectedPlaylist?.id == playlist.id) {
+      tracksOfSelectedPlaylist = tracksOfSelectedPlaylist.where((t) => t.id != track.id).toList();
+      notifyListeners();
+    }
+  }
+
+  /// Из списка [playlists] возвращает id тех, что уже содержат [track] —
+  /// чтобы меню "Добавить в плейлист" могло показать галочку и переключать
+  /// добавление/удаление повторным нажатием.
+  Future<Set<String>> playlistIdsContainingTrack(Track track, List<Playlist> playlists) {
+    final ids = playlists.where((p) => !p.isVirtual).map((p) => p.id).toList();
+    return _backend.fetchPlaylistIdsContainingTrack(track.id, ids);
+  }
+
   Future<void> search(String query) async {
     if (query.trim().isEmpty) {
       searchResults = [];
@@ -216,7 +263,9 @@ class MusicLibrary extends ChangeNotifier {
     }
     isSearching = true;
     notifyListeners();
-    searchResults = await _backend.searchTracks(query);
+    final results = await _backend.searchTracks(query);
+    searchResults =
+        results.length > searchResultsLimit ? results.sublist(0, searchResultsLimit) : results;
     isSearching = false;
     notifyListeners();
   }

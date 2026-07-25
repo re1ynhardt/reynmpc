@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../library/music_library.dart';
 import '../localization/locale_controller.dart';
+import '../models/playlist.dart';
 import '../models/track.dart';
 import '../player/player_controller.dart';
 import '../theme/app_theme.dart';
+import 'track_artwork.dart';
 
 class TrackListView extends StatelessWidget {
   final List<Track> tracks;
@@ -48,6 +50,7 @@ class TrackListView extends StatelessWidget {
           final track = tracks[i];
           final isCurrent = player.currentTrack?.id == track.id;
           final library = context.watch<MusicLibrary>();
+          final ownPlaylists = library.playlists.where((p) => !p.isVirtual).toList();
           return _TrackRow(
             index: i + 1,
             track: track,
@@ -57,6 +60,10 @@ class TrackListView extends StatelessWidget {
             durationLabel: _formatDuration(track.duration),
             onTap: () => player.playFromList(tracks, i),
             onToggleLike: () => library.toggleLike(track),
+            playlists: ownPlaylists,
+            loadMembership: () => library.playlistIdsContainingTrack(track, ownPlaylists),
+            onAddToPlaylist: (playlist) => library.addTrackToPlaylist(track, playlist),
+            onRemoveFromPlaylist: (playlist) => library.removeTrackFromPlaylist(track, playlist),
           );
         }),
       ],
@@ -73,6 +80,10 @@ class _TrackRow extends StatefulWidget {
   final String durationLabel;
   final VoidCallback onTap;
   final VoidCallback onToggleLike;
+  final List<Playlist> playlists;
+  final Future<Set<String>> Function() loadMembership;
+  final ValueChanged<Playlist> onAddToPlaylist;
+  final ValueChanged<Playlist> onRemoveFromPlaylist;
 
   const _TrackRow({
     required this.index,
@@ -83,6 +94,10 @@ class _TrackRow extends StatefulWidget {
     required this.durationLabel,
     required this.onTap,
     required this.onToggleLike,
+    required this.playlists,
+    required this.loadMembership,
+    required this.onAddToPlaylist,
+    required this.onRemoveFromPlaylist,
   });
 
   @override
@@ -91,6 +106,63 @@ class _TrackRow extends StatefulWidget {
 
 class _TrackRowState extends State<_TrackRow> {
   bool _hovering = false;
+
+  Future<void> _openAddToPlaylistMenu(BuildContext context, Offset globalPosition) async {
+    final s = context.read<LocaleController>().s;
+    final pal = AppColors.of(context);
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+
+    if (widget.playlists.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.addToPlaylistEmpty)));
+      return;
+    }
+
+    // Узнаём, в каких плейлистах трек уже есть, ДО открытия меню — чтобы
+    // сразу нарисовать галочки, а не мигать пустым меню и дозагружать их.
+    final memberIds = await widget.loadMembership();
+    if (!context.mounted) return;
+
+    final selected = await showMenu<Playlist>(
+      context: context,
+      position: RelativeRect.fromRect(globalPosition & const Size(1, 1), Offset.zero & overlay.size),
+      items: [
+        PopupMenuItem<Playlist>(enabled: false, child: Text(s.addToPlaylist, style: const TextStyle(fontWeight: FontWeight.bold))),
+        const PopupMenuDivider(),
+        for (final playlist in widget.playlists)
+          PopupMenuItem<Playlist>(
+            value: playlist,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  child: memberIds.contains(playlist.id) ? Icon(Icons.check, size: 18, color: pal.accent) : null,
+                ),
+                const SizedBox(width: 4),
+                Expanded(child: Text(playlist.name, overflow: TextOverflow.ellipsis)),
+              ],
+            ),
+          ),
+      ],
+    );
+
+    if (selected == null) return;
+
+    // Повторное нажатие на плейлист, где трек уже есть, — убирает его
+    // оттуда (тот же пункт меню работает как переключатель).
+    if (memberIds.contains(selected.id)) {
+      widget.onRemoveFromPlaylist(selected);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('${s.removedFromPlaylist}: ${selected.name}')));
+      }
+    } else {
+      widget.onAddToPlaylist(selected);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('${s.addedToPlaylist}: ${selected.name}')));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,11 +190,7 @@ class _TrackRowState extends State<_TrackRow> {
                 flex: 4,
                 child: Row(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image.network(widget.track.artworkUrl, width: 40, height: 40, fit: BoxFit.cover,
-                          errorBuilder: (ctx, error, stackTrace) => Container(width: 40, height: 40, color: pal.surfaceHigh)),
-                    ),
+                    TrackArtwork(artworkUrl: widget.track.artworkUrl, size: 40),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -166,7 +234,26 @@ class _TrackRowState extends State<_TrackRow> {
               ),
               const SizedBox(width: 12),
               Text(widget.durationLabel, style: TextStyle(color: pal.textSecondary)),
-              const SizedBox(width: 24),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 28,
+                child: _hovering
+                    ? Builder(
+                        builder: (buttonContext) => IconButton(
+                          onPressed: () {
+                            final renderBox = buttonContext.findRenderObject() as RenderBox;
+                            final position = renderBox.localToGlobal(renderBox.size.bottomLeft(Offset.zero));
+                            _openAddToPlaylistMenu(buttonContext, position);
+                          },
+                          splashRadius: 16,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Icon(Icons.more_horiz, size: 18, color: pal.textSecondary),
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 16),
             ],
           ),
         ),

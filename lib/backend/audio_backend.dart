@@ -12,8 +12,10 @@ import '../models/track.dart';
 ///                                    ^^^^^^^^^^^^^^^^ поменять на свой,
 ///                                    например RestAudioBackend(baseUrl: ...)
 abstract class AudioBackend {
-  /// Список плейлистов для главного экрана / сайдбара.
-  Future<List<Playlist>> fetchPlaylists();
+  /// Список плейлистов для главного экрана / сайдбара, принадлежащих
+  /// пользователю [userId] (null — гость / нет сессии: пустой список,
+  /// без чужих плейлистов).
+  Future<List<Playlist>> fetchPlaylists(String? userId);
 
   /// Треки конкретного плейлиста.
   Future<List<Track>> fetchTracksForPlaylist(String playlistId);
@@ -38,6 +40,19 @@ abstract class AudioBackend {
   /// подписанный/временный URL, обновить токен и т.п. Мок-реализация может
   /// просто вернуть `track.audioUrl` синхронно, обёрнутый в Future.
   Future<String> resolveStreamUrl(Track track);
+
+  /// Добавляет трек [trackId] в конец плейлиста [playlistId] (если он там
+  /// уже есть — ничего не делает, повторно не дублирует).
+  Future<void> addTrackToPlaylist(String playlistId, String trackId);
+
+  /// Убирает трек [trackId] из плейлиста [playlistId] (если его там нет —
+  /// ничего не делает).
+  Future<void> removeTrackFromPlaylist(String playlistId, String trackId);
+
+  /// Из списка [playlistIds] возвращает те, что уже содержат трек
+  /// [trackId] — нужно, чтобы показать галочку в меню "Добавить в
+  /// плейлист" и разрешить убрать трек повторным нажатием.
+  Future<Set<String>> fetchPlaylistIdsContainingTrack(String trackId, List<String> playlistIds);
 
   /// Id треков, которые пользователь [userId] отметил как понравившиеся
   /// ("Мои лайкнутые"). То же самое хранилище (`db/favorites.json`),

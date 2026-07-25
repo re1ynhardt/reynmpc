@@ -96,7 +96,7 @@ class SettingsDialog extends StatelessWidget {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text(s.close, style: const TextStyle(color: AppColors.green)),
+                  child: Text(s.close, style: const TextStyle(color: AppColors.red)),
                 ),
               ),
             ],
@@ -134,7 +134,7 @@ class _ThemeOption extends StatelessWidget {
             children: [
               Icon(
                 selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                color: selected ? AppColors.green : pal.textSecondary,
+                color: selected ? AppColors.red : pal.textSecondary,
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -176,7 +176,7 @@ class _LanguageOption extends StatelessWidget {
             children: [
               Icon(
                 selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                color: selected ? AppColors.green : pal.textSecondary,
+                color: selected ? AppColors.red : pal.textSecondary,
                 size: 20,
               ),
               const SizedBox(width: 12),

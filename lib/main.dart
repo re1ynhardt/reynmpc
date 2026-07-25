@@ -125,7 +125,9 @@ class _AuthGateState extends State<AuthGate> {
     // MusicLibrary прямо во время build() этого виджета.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<MusicLibrary>().loadFavoritesForUser(userId);
+      final library = context.read<MusicLibrary>();
+      library.loadFavoritesForUser(userId);
+      library.loadPlaylistsForUser(userId);
     });
   }
 

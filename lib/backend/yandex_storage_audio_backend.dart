@@ -117,11 +117,15 @@ class YandexStorageAudioBackend implements AudioBackend {
 
   // ---- чтение плейлистов ----
 
-  Playlist _playlistFromJson(Map<String, dynamic> json) {
+  Playlist _playlistFromJson(Map<String, dynamic> json, {String? fallbackCoverUrl}) {
+    final ownCover = json['cover_url'] as String? ?? '';
     return Playlist(
       id: json['id'] as String,
       name: json['name'] as String? ?? '',
-      coverUrl: json['cover_url'] as String? ?? '',
+      // У плейлиста может не быть своей загруженной обложки (cover_url
+      // пустой в базе) — тогда, как в Spotify, показываем обложку первого
+      // трека плейлиста вместо пустого серого квадрата.
+      coverUrl: ownCover.isNotEmpty ? ownCover : (fallbackCoverUrl ?? ''),
       // В реальной схеме у плейлиста нет отдельного описания.
       description: '',
     );
@@ -139,12 +143,44 @@ class YandexStorageAudioBackend implements AudioBackend {
 
   // ---- реализация AudioBackend ----
 
+  // Кэш плейлистов зависит от того, чьи плейлисты запрашивали последний
+  // раз — иначе после смены аккаунта fetchPlaylists() молча вернёт кэш
+  // предыдущего пользователя.
+  String? _playlistsCacheUserId;
+
   @override
-  Future<List<Playlist>> fetchPlaylists() async {
-    if (_playlistsCache != null) return _playlistsCache!;
+  Future<List<Playlist>> fetchPlaylists(String? userId) async {
+    if (_playlistsCache != null && _playlistsCacheUserId == userId) {
+      return _playlistsCache!;
+    }
 
     final items = await _rawPlaylists();
-    _playlistsCache = items.map(_playlistFromJson).toList();
+    // db/playlists.json — общий для всех пользователей файл (там же лежат
+    // плейлисты и мобильного приложения), поэтому без фильтра по owner_id
+    // сюда попадали чужие плейлисты. Показываем только свои.
+    final own = userId == null ? const <Map<String, dynamic>>[] : items.where((p) => p['owner_id'] == userId);
+
+    // Для фолбэк-обложки (см. _playlistFromJson) нужны сами треки —
+    // грузим один раз на весь список, а не по треку на плейлист.
+    await _allTracks();
+    final tracksById = _tracksByIdCache!;
+
+    _playlistsCache = own.map((json) {
+      final trackIds = (json['track_ids'] as List?)?.cast<String>() ?? const [];
+      String? fallbackCover;
+      // track_ids — порядок добавления треков в плейлист (новые дописываются
+      // в конец), поэтому идём с конца, чтобы обложкой стал последний
+      // добавленный трек, а не самый первый.
+      for (final id in trackIds.reversed) {
+        final cover = tracksById[id]?.artworkUrl;
+        if (cover != null && cover.isNotEmpty) {
+          fallbackCover = cover;
+          break;
+        }
+      }
+      return _playlistFromJson(json, fallbackCoverUrl: fallbackCover);
+    }).toList();
+    _playlistsCacheUserId = userId;
     return _playlistsCache!;
   }
 
@@ -189,6 +225,64 @@ class YandexStorageAudioBackend implements AudioBackend {
   }
 
   @override
+  Future<void> addTrackToPlaylist(String playlistId, String trackId) async {
+    final items = List<Map<String, dynamic>>.from(await _rawPlaylists());
+
+    final index = items.indexWhere((json) => json['id'] == playlistId);
+    if (index == -1) {
+      throw StateError('Playlist $playlistId not found');
+    }
+
+    final trackIds = List<String>.from((items[index]['track_ids'] as List?)?.cast<String>() ?? const []);
+    if (trackIds.contains(trackId)) return; // уже добавлен — лишний запрос на запись не нужен
+
+    // Новый трек — в конец списка, как обычно при добавлении в плейлист.
+    trackIds.add(trackId);
+    items[index] = {...items[index], 'track_ids': trackIds};
+
+    await _writeJsonObject(_playlistsKey, {'items': items});
+
+    _rawPlaylistsCache = null;
+    _playlistsCache = null;
+    _playlistsCacheUserId = null;
+  }
+
+  @override
+  Future<void> removeTrackFromPlaylist(String playlistId, String trackId) async {
+    final items = List<Map<String, dynamic>>.from(await _rawPlaylists());
+
+    final index = items.indexWhere((json) => json['id'] == playlistId);
+    if (index == -1) {
+      throw StateError('Playlist $playlistId not found');
+    }
+
+    final trackIds = List<String>.from((items[index]['track_ids'] as List?)?.cast<String>() ?? const []);
+    if (!trackIds.remove(trackId)) return; // трека и так не было — лишний запрос на запись не нужен
+
+    items[index] = {...items[index], 'track_ids': trackIds};
+
+    await _writeJsonObject(_playlistsKey, {'items': items});
+
+    _rawPlaylistsCache = null;
+    _playlistsCache = null;
+    _playlistsCacheUserId = null;
+  }
+
+  @override
+  Future<Set<String>> fetchPlaylistIdsContainingTrack(String trackId, List<String> playlistIds) async {
+    final items = await _rawPlaylists();
+    final wanted = playlistIds.toSet();
+    final result = <String>{};
+    for (final json in items) {
+      final id = json['id'] as String;
+      if (!wanted.contains(id)) continue;
+      final trackIds = (json['track_ids'] as List?)?.cast<String>() ?? const [];
+      if (trackIds.contains(trackId)) result.add(id);
+    }
+    return result;
+  }
+
+  @override
   Future<void> deletePlaylist(String playlistId) async {
     // Удаляем только запись о плейлисте из db/playlists.json — сами треки
     // (db/tracks.json) и медиафайлы в бакете не трогаем, т.к. треки могут
@@ -200,6 +294,7 @@ class YandexStorageAudioBackend implements AudioBackend {
 
     _rawPlaylistsCache = null;
     _playlistsCache = null;
+    _playlistsCacheUserId = null;
   }
 
   @override
@@ -217,10 +312,17 @@ class YandexStorageAudioBackend implements AudioBackend {
 
     await _writeJsonObject(_playlistsKey, {'items': items});
 
+    // Кэш плейлистов уже содержит фолбэк-обложку (из первого трека, см.
+    // fetchPlaylists) — переносим её в результат, иначе после переименования
+    // обложка на секунду "пропадёт" до следующей загрузки списка.
+    final currentFallback =
+        _playlistsCache?.firstWhere((p) => p.id == playlistId, orElse: () => const Playlist(id: '', name: '', coverUrl: '')).coverUrl;
+
     _rawPlaylistsCache = null;
     _playlistsCache = null;
+    _playlistsCacheUserId = null;
 
-    return _playlistFromJson(items[index]);
+    return _playlistFromJson(items[index], fallbackCoverUrl: currentFallback);
   }
 
   // ---- избранное ("Мои лайкнутые") ----------------------------------

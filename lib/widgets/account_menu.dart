@@ -53,6 +53,7 @@ class AccountAvatarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
     final initial = _initial(auth.currentUserName, auth.currentUserEmail);
+    final avatarUrl = auth.currentUserAvatarUrl;
 
     return Builder(
       builder: (buttonContext) {
@@ -65,12 +66,20 @@ class AccountAvatarButton extends StatelessWidget {
             child: Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(color: AppColors.red, shape: BoxShape.circle),
-              alignment: Alignment.center,
-              child: Text(
-                initial,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              decoration: BoxDecoration(
+                color: AppColors.red,
+                shape: BoxShape.circle,
+                image: avatarUrl != null
+                    ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover, onError: (_, __) {})
+                    : null,
               ),
+              alignment: Alignment.center,
+              child: avatarUrl == null
+                  ? Text(
+                      initial,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    )
+                  : null,
             ),
           ),
         );
@@ -91,6 +100,7 @@ class _AccountPopoverContent extends StatelessWidget {
 
     final name = auth.currentUserName ?? auth.currentUserEmail ?? '';
     final email = auth.currentUserEmail ?? '';
+    final avatarUrl = auth.currentUserAvatarUrl;
 
     return Container(
       width: 240,
@@ -112,10 +122,13 @@ class _AccountPopoverContent extends StatelessWidget {
               CircleAvatar(
                 radius: 18,
                 backgroundColor: AppColors.red,
-                child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : '?',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
+                backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                child: avatarUrl == null
+                    ? Text(
+                        name.isNotEmpty ? name[0].toUpperCase() : '?',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      )
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(

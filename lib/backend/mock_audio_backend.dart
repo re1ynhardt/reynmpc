@@ -71,7 +71,7 @@ class MockAudioBackend implements AudioBackend {
   }
 
   @override
-  Future<List<Playlist>> fetchPlaylists() async {
+  Future<List<Playlist>> fetchPlaylists(String? userId) async {
     await Future.delayed(_networkDelay);
     return _playlists;
   }
@@ -106,6 +106,33 @@ class MockAudioBackend implements AudioBackend {
   Future<String> resolveStreamUrl(Track track) async {
     // В реальном бэкенде тут мог бы быть запрос за временным подписанным URL.
     return track.audioUrl;
+  }
+
+  @override
+  Future<void> addTrackToPlaylist(String playlistId, String trackId) async {
+    await Future.delayed(_networkDelay);
+    final list = _tracksByPlaylist[playlistId];
+    if (list == null) {
+      throw StateError('Playlist $playlistId not found');
+    }
+    if (list.any((t) => t.id == trackId)) return;
+    final track = _tracksByPlaylist.values.expand((l) => l).firstWhere((t) => t.id == trackId);
+    list.add(track);
+  }
+
+  @override
+  Future<void> removeTrackFromPlaylist(String playlistId, String trackId) async {
+    await Future.delayed(_networkDelay);
+    _tracksByPlaylist[playlistId]?.removeWhere((t) => t.id == trackId);
+  }
+
+  @override
+  Future<Set<String>> fetchPlaylistIdsContainingTrack(String trackId, List<String> playlistIds) async {
+    await Future.delayed(_networkDelay);
+    return {
+      for (final id in playlistIds)
+        if (_tracksByPlaylist[id]?.any((t) => t.id == trackId) ?? false) id,
+    };
   }
 
   @override

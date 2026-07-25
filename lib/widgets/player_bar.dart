@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../library/music_library.dart';
 import '../player/player_controller.dart';
 import '../theme/app_theme.dart';
+import 'track_artwork.dart';
 
 class PlayerBar extends StatelessWidget {
   const PlayerBar({super.key});
@@ -36,11 +37,7 @@ class PlayerBar extends StatelessWidget {
                 ? const SizedBox.shrink()
                 : Row(
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Image.network(track.artworkUrl, width: 56, height: 56, fit: BoxFit.cover,
-                            errorBuilder: (ctx, error, stackTrace) => Container(width: 56, height: 56, color: pal.surfaceHigh)),
-                      ),
+                      TrackArtwork(artworkUrl: track.artworkUrl, size: 56),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(

@@ -127,6 +127,7 @@ class AuthController extends ChangeNotifier {
   String? _currentUserId;
   String? _currentUserEmail;
   String? _currentUserName;
+  String? _currentUserAvatarUrl;
   String? _sessionToken;
   bool _isReady = false;
 
@@ -144,6 +145,12 @@ class AuthController extends ChangeNotifier {
   /// Имя аккаунта текущего пользователя.
   String? get currentUserName => _currentUserName;
 
+  /// Ссылка на аватарку из db/users.json (row['avatar_url']) — та же,
+  /// что показывает мобильное приложение. null/пусто, если аватарка не
+  /// загружена — тогда UI рисует заглушку с буквой имени.
+  String? get currentUserAvatarUrl =>
+      (_currentUserAvatarUrl != null && _currentUserAvatarUrl!.isNotEmpty) ? _currentUserAvatarUrl : null;
+
   bool get isLoggedIn => _currentUserEmail != null;
 
   /// Восстанавливает сохранённую локально сессию (id/email/имя/токен).
@@ -158,6 +165,7 @@ class AuthController extends ChangeNotifier {
       _currentUserId = session['id'] as String?;
       _currentUserEmail = session['email'] as String?;
       _currentUserName = session['name'] as String?;
+      _currentUserAvatarUrl = session['avatarUrl'] as String?;
       _sessionToken = session['token'] as String?;
     }
 
@@ -290,6 +298,7 @@ class AuthController extends ChangeNotifier {
       id: row['id'] as String,
       email: normalized,
       name: row['display_name'] as String,
+      avatarUrl: row['avatar_url'] as String?,
       token: row['token'] as String,
     );
     return AuthResult.success;
@@ -337,6 +346,7 @@ class AuthController extends ChangeNotifier {
       id: row['id'] as String,
       email: normalized,
       name: row['display_name'] as String,
+      avatarUrl: row['avatar_url'] as String?,
       token: row['token'] as String,
     );
     return AuthResult.success;
@@ -346,13 +356,18 @@ class AuthController extends ChangeNotifier {
     required String id,
     required String email,
     required String name,
+    required String? avatarUrl,
     required String token,
   }) async {
     _currentUserId = id;
     _currentUserEmail = email;
     _currentUserName = name;
+    _currentUserAvatarUrl = avatarUrl;
     _sessionToken = token;
-    await _prefs!.setString(_sessionKey, jsonEncode({'id': id, 'email': email, 'name': name, 'token': token}));
+    await _prefs!.setString(
+      _sessionKey,
+      jsonEncode({'id': id, 'email': email, 'name': name, 'avatarUrl': avatarUrl, 'token': token}),
+    );
     notifyListeners();
   }
 
@@ -361,6 +376,7 @@ class AuthController extends ChangeNotifier {
     _currentUserId = null;
     _currentUserEmail = null;
     _currentUserName = null;
+    _currentUserAvatarUrl = null;
     _sessionToken = null;
     await _prefs!.remove(_sessionKey);
     notifyListeners();

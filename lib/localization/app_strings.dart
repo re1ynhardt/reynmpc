@@ -26,6 +26,10 @@ abstract class AppStrings {
   String get deletePlaylist;
   String get deletePlaylistConfirm;
   String get delete;
+  String get addToPlaylist;
+  String get addToPlaylistEmpty;
+  String get addedToPlaylist;
+  String get removedFromPlaylist;
 
   String get settingsTitle;
   String get languageLabel;
@@ -108,6 +112,14 @@ class _StringsRu implements AppStrings {
   String get deletePlaylistConfirm => 'Удалить этот плейлист? Это действие нельзя отменить.';
   @override
   String get delete => 'Удалить';
+  @override
+  String get addToPlaylist => 'Добавить в плейлист';
+  @override
+  String get addToPlaylistEmpty => 'Сначала создайте плейлист';
+  @override
+  String get addedToPlaylist => 'Добавлено в плейлист';
+  @override
+  String get removedFromPlaylist => 'Убрано из плейлиста';
 
   @override
   String get settingsTitle => 'Настройки';
@@ -204,6 +216,14 @@ class _StringsEn implements AppStrings {
   String get deletePlaylistConfirm => 'Delete this playlist? This action can\'t be undone.';
   @override
   String get delete => 'Delete';
+  @override
+  String get addToPlaylist => 'Add to playlist';
+  @override
+  String get addToPlaylistEmpty => 'Create a playlist first';
+  @override
+  String get addedToPlaylist => 'Added to playlist';
+  @override
+  String get removedFromPlaylist => 'Removed from playlist';
 
   @override
   String get settingsTitle => 'Settings';
