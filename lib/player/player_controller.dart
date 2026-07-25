@@ -66,6 +66,7 @@ class PlayerController extends ChangeNotifier {
       final url = await _backend.resolveStreamUrl(track);
       await _player.setUrl(url);
       await _player.setVolume(_volume);
+      _applyLoopMode();
       await _player.play();
     } catch (e) {
       debugPrint('Ошибка воспроизведения: $e');
@@ -132,15 +133,24 @@ class PlayerController extends ChangeNotifier {
 
   void cycleRepeatMode() {
     _repeatMode = PlayerRepeatMode.values[(_repeatMode.index + 1) % PlayerRepeatMode.values.length];
+    _applyLoopMode();
     notifyListeners();
   }
 
+  /// Отдаём зацикливание одного трека нативному LoopMode плеера, а не
+  /// вручную через seek()+play() в _onTrackCompleted(). Ручной вариант
+  /// приводил к гонке: play() мог уйти в just_audio раньше, чем seek(0)
+  /// реально откатывал позицию, плеер почти сразу получал новый
+  /// ProcessingState.completed и снова вызывал play() — из-за этого
+  /// пауза "перебивалась" следующим витком цикла и не срабатывала.
+  void _applyLoopMode() {
+    _player.setLoopMode(_repeatMode == PlayerRepeatMode.one ? LoopMode.one : LoopMode.off);
+  }
+
   void _onTrackCompleted() {
-    if (_repeatMode == PlayerRepeatMode.one) {
-      seek(Duration.zero);
-      _player.play();
-      return;
-    }
+    // Повтор одного трека теперь обрабатывается нативно через LoopMode.one —
+    // ProcessingState.completed в этом режиме вообще не будет приходить.
+    if (_repeatMode == PlayerRepeatMode.one) return;
     next();
   }
 
