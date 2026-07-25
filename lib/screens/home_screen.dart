@@ -56,8 +56,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void _applyEntry(_NavEntry entry) {
     final library = context.read<MusicLibrary>();
     setState(() => _view = entry.view);
-    if (entry.playlist != null && library.selectedPlaylist?.id != entry.playlist!.id) {
-      library.selectPlaylist(entry.playlist!);
+    if (entry.playlist != null) {
+      if (library.selectedPlaylist?.id != entry.playlist!.id) {
+        library.selectPlaylist(entry.playlist!);
+      }
+    } else if (entry.view == NavView.home) {
+      // Запись истории без плейлиста на Главной — значит там был общий
+      // список первых треков, а не открытый плейлист.
+      library.clearSelectedPlaylist();
     }
     if (entry.view != NavView.search) {
       _searchController.clear();
@@ -83,6 +89,11 @@ class _HomeScreenState extends State<HomeScreen> {
       // Уходим с поиска — сбрасываем запрос, чтобы не путать при возврате.
       _searchController.clear();
       context.read<MusicLibrary>().search('');
+    }
+    if (view == NavView.home) {
+      // Клик по "Главная" в навигации всегда возвращает к общему списку
+      // первых треков, а не к последнему открытому плейлисту.
+      context.read<MusicLibrary>().clearSelectedPlaylist();
     }
     _pushHistory(view);
   }
@@ -162,7 +173,9 @@ class _HomeScreenState extends State<HomeScreen> {
           onPlaylistTap: _openPlaylist,
         );
       case NavView.home:
-        return _PlaylistContent(library: library);
+        return library.selectedPlaylist != null
+            ? _PlaylistContent(library: library)
+            : _AllTracksContent(library: library);
     }
   }
 }
@@ -488,6 +501,46 @@ class _PlaylistContent extends StatelessWidget {
             )
           else
             TrackListView(tracks: library.tracksOfSelectedPlaylist),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+/// Главная по умолчанию: первые [MusicLibrary.homeTracksLimit] треков из
+/// всех треков, загруженных в плеер (см. [MusicLibrary.homeTracks]) —
+/// не привязано ни к какому конкретному плейлисту.
+class _AllTracksContent extends StatelessWidget {
+  final MusicLibrary library;
+  const _AllTracksContent({required this.library});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<LocaleController>().s;
+    final pal = AppColors.of(context);
+
+    if (library.isLoadingAllTracks) {
+      return Center(child: CircularProgressIndicator(color: pal.accent));
+    }
+    if (library.allTracks.isEmpty) {
+      return Center(
+        child: Text(s.libraryEmpty, style: TextStyle(color: pal.textSecondary)),
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+            child: Text(
+              s.navHome,
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: pal.textPrimary),
+            ),
+          ),
+          TrackListView(tracks: library.homeTracks),
           const SizedBox(height: 24),
         ],
       ),

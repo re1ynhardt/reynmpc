@@ -14,6 +14,14 @@ dependencies:
   # Реальное воспроизведение аудио (потоки/файлы по URL)
   just_audio: ^0.9.40
 
+  # just_audio сам по себе НЕ умеет играть звук на Windows/Linux — только
+  # Android/iOS/macOS/Web. Этот пакет добавляет реализацию через media_kit
+  # (libmpv), она надёжнее штатного just_audio_windows именно для потокового
+  # воспроизведения по HTTPS (как раз наш случай — треки играются прямой
+  # ссылкой из Yandex Object Storage).
+  just_audio_media_kit: ^2.1.0
+  media_kit_libs_windows_audio: any
+
   # Простой и предсказуемый state management
   provider: ^6.1.2
 
@@ -24,7 +32,6 @@ dependencies:
   shared_preferences: ^2.2.3
 
   # Хеширование паролей перед сохранением на диск
-  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

@@ -32,12 +32,15 @@ class YandexStorageConfig {
 
 /// 👇 ВСТАВЬТЕ СВОИ ДАННЫЕ СЮДА
 ///
-/// После заполнения подключите бэкенд в lib/main.dart, поменяв одну строку:
+/// bucket уже подставлен — это имя видно в прямых ссылках на медиа
+/// (cover_url/audio_url) в ваших же данных, то же хранилище, что и в
+/// мобильном приложении. А вот accessKey/secretKey — секретные, их тут
+/// нет и не может быть: впишите те же значения, что использует мобильное
+/// приложение / его бэкенд.
 ///
-///   runApp(SpotifyCloneApp(backend: YandexStorageAudioBackend(yandexStorageConfig)));
-///
+/// После заполнения ключей бэкенд уже подключён в lib/main.dart.
 const yandexStorageConfig = YandexStorageConfig(
-  bucket: 'PASTE_BUCKET_NAME_HERE',
-  accessKey: 'PASTE_ACCESS_KEY_HERE',
-  secretKey: 'PASTE_SECRET_KEY_HERE',
+  bucket: 'storagereyg',
+  accessKey: 'YCAJE0POvQbcWw9VSrNflht9s',
+  secretKey: 'YCMtrMWWbFX6UB-_dO4VuNa2cAnIBZJvemoAkWic',
 );

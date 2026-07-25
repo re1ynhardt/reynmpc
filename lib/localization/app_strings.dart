@@ -19,6 +19,13 @@ abstract class AppStrings {
   String get columnAlbum;
   String get searchPrompt;
   String get libraryEmpty;
+  String get renamePlaylist;
+  String get playlistNameField;
+  String get save;
+  String get cancel;
+  String get deletePlaylist;
+  String get deletePlaylistConfirm;
+  String get delete;
 
   String get settingsTitle;
   String get languageLabel;
@@ -87,6 +94,20 @@ class _StringsRu implements AppStrings {
   String get searchPrompt => 'Начните вводить название трека или исполнителя';
   @override
   String get libraryEmpty => 'Плейлистов пока нет';
+  @override
+  String get renamePlaylist => 'Переименовать плейлист';
+  @override
+  String get playlistNameField => 'Название плейлиста';
+  @override
+  String get save => 'Сохранить';
+  @override
+  String get cancel => 'Отмена';
+  @override
+  String get deletePlaylist => 'Удалить плейлист';
+  @override
+  String get deletePlaylistConfirm => 'Удалить этот плейлист? Это действие нельзя отменить.';
+  @override
+  String get delete => 'Удалить';
 
   @override
   String get settingsTitle => 'Настройки';
@@ -169,6 +190,20 @@ class _StringsEn implements AppStrings {
   String get searchPrompt => 'Start typing a song or artist name';
   @override
   String get libraryEmpty => 'No playlists yet';
+  @override
+  String get renamePlaylist => 'Rename playlist';
+  @override
+  String get playlistNameField => 'Playlist name';
+  @override
+  String get save => 'Save';
+  @override
+  String get cancel => 'Cancel';
+  @override
+  String get deletePlaylist => 'Delete playlist';
+  @override
+  String get deletePlaylistConfirm => 'Delete this playlist? This action can\'t be undone.';
+  @override
+  String get delete => 'Delete';
 
   @override
   String get settingsTitle => 'Settings';

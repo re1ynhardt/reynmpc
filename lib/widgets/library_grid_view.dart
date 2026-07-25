@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../library/music_library.dart';
 import '../localization/locale_controller.dart';
 import '../models/playlist.dart';
 import '../theme/app_theme.dart';
@@ -68,7 +69,12 @@ class LibraryGridView extends StatelessWidget {
           itemCount: playlists.length,
           itemBuilder: (context, i) {
             final playlist = playlists[i];
-            return _LibraryCard(playlist: playlist, onTap: () => onPlaylistTap(playlist));
+            return _LibraryCard(
+              playlist: playlist,
+              onTap: () => onPlaylistTap(playlist),
+              onRename: (newName) => context.read<MusicLibrary>().renamePlaylist(playlist, newName),
+              onDelete: () => context.read<MusicLibrary>().deletePlaylist(playlist),
+            );
           },
         );
       },
@@ -79,8 +85,15 @@ class LibraryGridView extends StatelessWidget {
 class _LibraryCard extends StatefulWidget {
   final Playlist playlist;
   final VoidCallback onTap;
+  final ValueChanged<String> onRename;
+  final VoidCallback onDelete;
 
-  const _LibraryCard({required this.playlist, required this.onTap});
+  const _LibraryCard({
+    required this.playlist,
+    required this.onTap,
+    required this.onRename,
+    required this.onDelete,
+  });
 
   @override
   State<_LibraryCard> createState() => _LibraryCardState();
@@ -88,6 +101,61 @@ class _LibraryCard extends StatefulWidget {
 
 class _LibraryCardState extends State<_LibraryCard> {
   bool _hovering = false;
+
+  Future<void> _showRenameDialog(BuildContext context) async {
+    final s = context.read<LocaleController>().s;
+    final controller = TextEditingController(text: widget.playlist.name);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(s.renamePlaylist),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(labelText: s.playlistNameField),
+          onSubmitted: (value) => Navigator.of(dialogContext).pop(value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(s.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+            child: Text(s.save),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (newName != null && newName.trim().isNotEmpty) {
+      widget.onRename(newName);
+    }
+  }
+
+  Future<void> _showDeleteDialog(BuildContext context) async {
+    final s = context.read<LocaleController>().s;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(s.deletePlaylist),
+        content: Text(s.deletePlaylistConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(s.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(s.delete, style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      widget.onDelete();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -131,6 +199,40 @@ class _LibraryCardState extends State<_LibraryCard> {
                         decoration: BoxDecoration(color: pal.accent, shape: BoxShape.circle),
                         padding: const EdgeInsets.all(8),
                         child: Icon(Icons.play_arrow, color: pal.onAccent, size: 20),
+                      ),
+                    ),
+                  if (_hovering && !widget.playlist.isVirtual)
+                    Positioned(
+                      left: 4,
+                      bottom: 4,
+                      child: Row(
+                        children: [
+                          Material(
+                            color: Colors.black54,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: () => _showRenameDialog(context),
+                              child: const Padding(
+                                padding: EdgeInsets.all(6),
+                                child: Icon(Icons.edit, color: Colors.white, size: 16),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Material(
+                            color: Colors.black54,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: () => _showDeleteDialog(context),
+                              child: const Padding(
+                                padding: EdgeInsets.all(6),
+                                child: Icon(Icons.delete_outline, color: Colors.white, size: 16),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],

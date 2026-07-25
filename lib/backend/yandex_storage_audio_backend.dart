@@ -7,36 +7,46 @@ import '../models/track.dart';
 import 'audio_backend.dart';
 import 'yandex_storage_config.dart';
 
-/// Бэкенд поверх Yandex Object Storage (S3-совместимое API) — то же
-/// хранилище, что уже используется в мобильном приложении.
+/// Бэкенд поверх Yandex Object Storage (S3-совместимое API) — то же самое
+/// хранилище (и та же "база данных" в виде JSON-файлов в бакете), что уже
+/// используется мобильным приложением. ПК-версия ничего не создаёт заново —
+/// она читает и аккуратно обновляет те же объекты.
 ///
-/// КАК ЭТО РАБОТАЕТ
-/// Метаданные (плейлисты, треки) хранятся как два JSON-файла в бакете,
-/// а сами mp3 и обложки — как обычные объекты. Ссылки на объекты
-/// получаются через presigned URL (временная подписанная ссылка,
-/// работает и для приватного бакета).
+/// РЕАЛЬНАЯ СТРУКТУРА БАКЕТА (как в мобильном приложении):
 ///
-/// ОЖИДАЕМАЯ СТРУКТУРА БАКЕТА (поправьте под свою — см. TODO ниже,
-/// если в мобильном приложении структура отличается):
+///   db/playlists.json
+///     { "items": [
+///         { "id": "...", "owner_id": "...", "name": "...",
+///           "cover_url": "https://.../media/covers/....jpg" (может быть ""),
+///           "track_ids": ["...", "..."] },
+///         ...
+///     ] }
 ///
-///   metadata/playlists.json
-///     [{ "id": "pl_daily", "name": "Daily Mix", "cover": "covers/daily.jpg", "description": "..." }, ...]
+///   db/tracks.json
+///     { "items": [
+///         { "id": "...", "title": "...", "artist": "...", "album": "...",
+///           "cover_url": "https://.../media/covers/....jpg",
+///           "audio_url": "https://.../media/audio/....mp3",
+///           "duration_seconds": 215,
+///           "uploaded_locally": true, "uploader_id": "...", "created_at": 0.0 },
+///         ...
+///     ] }
 ///
-///   metadata/tracks.json
-///     [{
-///        "id": "t1", "title": "...", "artist": "...", "album": "...",
-///        "durationSec": 215, "cover": "covers/t1.jpg", "audioKey": "audio/t1.mp3",
-///        "playlistIds": ["pl_daily", "pl_chill"]
-///     }, ...]
+/// Важно: `cover_url` и `audio_url` в этой схеме — это уже ГОТОВЫЕ прямые
+/// ссылки (медиа лежит в публично читаемой части бакета), а не ключи
+/// объектов. Поэтому, в отличие от черновой версии этого файла, здесь НЕ
+/// нужен пресайнинг для аудио/обложек — они используются как есть.
+/// Приватность нужна только для самих db/*.json (там есть служебные поля
+/// вроде uploader_id), поэтому их мы по-прежнему читаем/пишем через Minio
+/// с access/secret key.
 ///
-///   audio/*.mp3   — сами файлы треков
-///   covers/*.jpg  — обложки
-///
-/// Если у вас в мобильном приложении метаданные организованы иначе
-/// (например, в отдельной базе, а не в JSON внутри бакета) — замените
-/// тело fetchPlaylists()/_allTracks() на запрос к своему источнику
-/// метаданных; работа с самим Object Storage (presigned URL на аудио)
-/// при этом останется прежней.
+/// db/users.json, db/favorites.json, db/favorite_users.json и т.п. этот
+/// бэкенд не трогает — авторизация в ПК-версии сейчас отдельная, локальная
+/// (см. lib/auth/auth_controller.dart), чтобы ничего не сломать. Если
+/// позже понадобится завести реальный вход по той же базе пользователей —
+/// это отдельная задача (нужно знать точный алгоритм хеширования пароля,
+/// которым пользуется мобильное приложение/бэкенд, иначе есть риск либо
+/// пустить не туда, либо запереть существующих пользователей).
 class YandexStorageAudioBackend implements AudioBackend {
   YandexStorageAudioBackend(this.config)
       : _minio = Minio(
@@ -50,10 +60,20 @@ class YandexStorageAudioBackend implements AudioBackend {
   final YandexStorageConfig config;
   final Minio _minio;
 
-  List<Playlist>? _playlistsCache;
-  List<Track>? _tracksCache;
+  static const _playlistsKey = 'db/playlists.json';
+  static const _tracksKey = 'db/tracks.json';
+  static const _favoritesKey = 'db/favorites.json';
 
-  // ---- низкоуровневые хелперы для чтения объектов из бакета ----
+  List<Playlist>? _playlistsCache;
+  // Сырые записи плейлистов (с track_ids, owner_id и т.д.) — нужны отдельно
+  // от [Playlist], т.к. модель приложения не хранит track_ids/owner_id, а
+  // при переименовании/удалении мы не должны терять эти поля в бакете.
+  List<Map<String, dynamic>>? _rawPlaylistsCache;
+
+  List<Track>? _tracksCache;
+  Map<String, Track>? _tracksByIdCache;
+
+  // ---- низкоуровневые хелперы для чтения/записи JSON-объектов в бакете ----
 
   Future<String> _readObjectAsString(String key) async {
     final stream = await _minio.getObject(config.bucket, key);
@@ -61,10 +81,60 @@ class YandexStorageAudioBackend implements AudioBackend {
     return utf8.decode(bytes);
   }
 
-  /// Превращает ключ объекта ("audio/t1.mp3", "covers/t1.jpg") во
-  /// временную подписанную ссылку, по которой можно скачать/проиграть файл.
-  Future<String> _presignedUrl(String objectKey, {int expiresSeconds = 3600}) {
-    return _minio.presignedGetObject(config.bucket, objectKey, expires: expiresSeconds);
+  Future<void> _writeJsonObject(String key, Object value) async {
+    final bytes = utf8.encode(jsonEncode(value));
+    await _minio.putObject(config.bucket, key, Stream.value(bytes));
+  }
+
+  // ---- чтение треков ----
+
+  Track _trackFromJson(Map<String, dynamic> json) {
+    return Track(
+      id: json['id'] as String,
+      title: json['title'] as String? ?? '',
+      artist: json['artist'] as String? ?? '',
+      album: json['album'] as String? ?? '',
+      duration: Duration(seconds: (json['duration_seconds'] as num? ?? 0).toInt()),
+      artworkUrl: json['cover_url'] as String? ?? '',
+      // Уже готовая прямая ссылка на mp3 — presigned URL здесь не нужен,
+      // см. resolveStreamUrl ниже.
+      audioUrl: json['audio_url'] as String? ?? '',
+    );
+  }
+
+  Future<List<Track>> _allTracks() async {
+    if (_tracksCache != null) return _tracksCache!;
+
+    final raw = await _readObjectAsString(_tracksKey);
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+    final items = (decoded['items'] as List).cast<Map<String, dynamic>>();
+
+    final tracks = items.map(_trackFromJson).toList();
+    _tracksCache = tracks;
+    _tracksByIdCache = {for (final t in tracks) t.id: t};
+    return tracks;
+  }
+
+  // ---- чтение плейлистов ----
+
+  Playlist _playlistFromJson(Map<String, dynamic> json) {
+    return Playlist(
+      id: json['id'] as String,
+      name: json['name'] as String? ?? '',
+      coverUrl: json['cover_url'] as String? ?? '',
+      // В реальной схеме у плейлиста нет отдельного описания.
+      description: '',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _rawPlaylists() async {
+    if (_rawPlaylistsCache != null) return _rawPlaylistsCache!;
+
+    final raw = await _readObjectAsString(_playlistsKey);
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+    final items = (decoded['items'] as List).cast<Map<String, dynamic>>();
+    _rawPlaylistsCache = items;
+    return items;
   }
 
   // ---- реализация AudioBackend ----
@@ -73,60 +143,30 @@ class YandexStorageAudioBackend implements AudioBackend {
   Future<List<Playlist>> fetchPlaylists() async {
     if (_playlistsCache != null) return _playlistsCache!;
 
-    final raw = await _readObjectAsString('metadata/playlists.json');
-    final items = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
-
-    _playlistsCache = await Future.wait(items.map((json) async {
-      final coverKey = json['cover'] as String? ?? '';
-      return Playlist(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        // Обложки резолвим сразу — они нужны в UI немедленно.
-        // Обложки живут дольше (24ч), чем ссылки на аудио, чтобы не
-        // ловить битые картинки в длинных сессиях.
-        coverUrl: coverKey.isEmpty ? '' : await _presignedUrl(coverKey, expiresSeconds: 60 * 60 * 24),
-        description: json['description'] as String? ?? '',
-      );
-    }));
-
+    final items = await _rawPlaylists();
+    _playlistsCache = items.map(_playlistFromJson).toList();
     return _playlistsCache!;
-  }
-
-  Future<List<_TrackManifestEntry>> _allTrackEntries() async {
-    final raw = await _readObjectAsString('metadata/tracks.json');
-    final items = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
-    return items.map(_TrackManifestEntry.fromJson).toList();
-  }
-
-  Future<List<Track>> _allTracks() async {
-    if (_tracksCache != null) return _tracksCache!;
-
-    final entries = await _allTrackEntries();
-    _tracksCache = await Future.wait(entries.map((e) async {
-      return Track(
-        id: e.id,
-        title: e.title,
-        artist: e.artist,
-        album: e.album,
-        duration: Duration(seconds: e.durationSec),
-        artworkUrl: e.coverKey.isEmpty ? '' : await _presignedUrl(e.coverKey, expiresSeconds: 60 * 60 * 24),
-        // audioUrl тут хранит КЛЮЧ объекта, а не готовую ссылку — сама
-        // ссылка резолвится лениво в resolveStreamUrl() непосредственно
-        // перед воспроизведением, чтобы не протухала.
-        audioUrl: e.audioKey,
-      );
-    }));
-
-    return _tracksCache!;
   }
 
   @override
   Future<List<Track>> fetchTracksForPlaylist(String playlistId) async {
-    final entries = await _allTrackEntries();
-    final matchingIds = entries.where((e) => e.playlistIds.contains(playlistId)).map((e) => e.id).toSet();
-    final all = await _allTracks();
-    return all.where((t) => matchingIds.contains(t.id)).toList();
+    final items = await _rawPlaylists();
+    final playlistJson = items.firstWhere(
+      (p) => p['id'] == playlistId,
+      orElse: () => const {},
+    );
+    final trackIds = (playlistJson['track_ids'] as List?)?.cast<String>() ?? const [];
+
+    await _allTracks();
+    final byId = _tracksByIdCache!;
+
+    // Порядок треков в плейлисте важен — сохраняем его как в track_ids,
+    // пропуская id, для которых трека почему-то не нашлось в tracks.json.
+    return trackIds.map((id) => byId[id]).whereType<Track>().toList();
   }
+
+  @override
+  Future<List<Track>> fetchAllTracks() => _allTracks();
 
   @override
   Future<List<Track>> searchTracks(String query) async {
@@ -143,43 +183,88 @@ class YandexStorageAudioBackend implements AudioBackend {
 
   @override
   Future<String> resolveStreamUrl(Track track) async {
-    // track.audioUrl здесь — это ключ объекта (см. _allTracks), поэтому
-    // резолвим его в свежую подписанную ссылку прямо перед стартом плеера.
-    return _presignedUrl(track.audioUrl, expiresSeconds: 3600);
+    // track.audioUrl здесь — уже готовая прямая ссылка (см. _trackFromJson),
+    // поэтому просто возвращаем её как есть, без похода в S3 за подписью.
+    return track.audioUrl;
   }
-}
 
-class _TrackManifestEntry {
-  final String id;
-  final String title;
-  final String artist;
-  final String album;
-  final int durationSec;
-  final String coverKey;
-  final String audioKey;
-  final List<String> playlistIds;
+  @override
+  Future<void> deletePlaylist(String playlistId) async {
+    // Удаляем только запись о плейлисте из db/playlists.json — сами треки
+    // (db/tracks.json) и медиафайлы в бакете не трогаем, т.к. треки могут
+    // входить в другие плейлисты и использоваться мобильным приложением.
+    final items = List<Map<String, dynamic>>.from(await _rawPlaylists());
+    items.removeWhere((json) => json['id'] == playlistId);
 
-  _TrackManifestEntry({
-    required this.id,
-    required this.title,
-    required this.artist,
-    required this.album,
-    required this.durationSec,
-    required this.coverKey,
-    required this.audioKey,
-    required this.playlistIds,
-  });
+    await _writeJsonObject(_playlistsKey, {'items': items});
 
-  factory _TrackManifestEntry.fromJson(Map<String, dynamic> json) {
-    return _TrackManifestEntry(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      artist: json['artist'] as String,
-      album: json['album'] as String? ?? '',
-      durationSec: json['durationSec'] as int? ?? 0,
-      coverKey: json['cover'] as String? ?? '',
-      audioKey: json['audioKey'] as String,
-      playlistIds: (json['playlistIds'] as List?)?.cast<String>() ?? const [],
-    );
+    _rawPlaylistsCache = null;
+    _playlistsCache = null;
+  }
+
+  @override
+  Future<Playlist> renamePlaylist(String playlistId, String newName) async {
+    final items = List<Map<String, dynamic>>.from(await _rawPlaylists());
+
+    final index = items.indexWhere((json) => json['id'] == playlistId);
+    if (index == -1) {
+      throw StateError('Playlist $playlistId not found');
+    }
+    // Спред сохраняет все существующие поля (owner_id, track_ids,
+    // cover_url и т.п.) — меняется только name, остальное как было и в
+    // мобильном приложении.
+    items[index] = {...items[index], 'name': newName};
+
+    await _writeJsonObject(_playlistsKey, {'items': items});
+
+    _rawPlaylistsCache = null;
+    _playlistsCache = null;
+
+    return _playlistFromJson(items[index]);
+  }
+
+  // ---- избранное ("Мои лайкнутые") ----------------------------------
+  //
+  // db/favorites.json — плоский список пар {user_id, track_id}, ровно та
+  // же схема, что и в мобильном приложении (см.
+  // lib/services/yandex_storage_api_service.dart -> fetchFavoriteIds /
+  // setFavorite), поэтому лайки видны на обеих версиях одинаково.
+
+  List<Map<String, dynamic>>? _rawFavoritesCache;
+
+  Future<List<Map<String, dynamic>>> _rawFavorites() async {
+    if (_rawFavoritesCache != null) return _rawFavoritesCache!;
+    final raw = await _readObjectAsString(_favoritesKey);
+    final decoded = jsonDecode(raw) as Map<String, dynamic>;
+    final items = (decoded['items'] as List).cast<Map<String, dynamic>>();
+    _rawFavoritesCache = items;
+    return items;
+  }
+
+  @override
+  Future<Set<String>> fetchFavoriteTrackIds(String userId) async {
+    final items = await _rawFavorites();
+    return items.where((r) => r['user_id'] == userId).map((r) => r['track_id'] as String).toSet();
+  }
+
+  @override
+  Future<void> setFavorite({
+    required String userId,
+    required String trackId,
+    required bool favorite,
+  }) async {
+    final items = List<Map<String, dynamic>>.from(await _rawFavorites());
+    final exists = items.any((r) => r['user_id'] == userId && r['track_id'] == trackId);
+
+    if (favorite && !exists) {
+      items.add({'user_id': userId, 'track_id': trackId});
+    } else if (!favorite && exists) {
+      items.removeWhere((r) => r['user_id'] == userId && r['track_id'] == trackId);
+    } else {
+      return; // уже в нужном состоянии — лишний запрос на запись не нужен
+    }
+
+    await _writeJsonObject(_favoritesKey, {'items': items});
+    _rawFavoritesCache = items;
   }
 }

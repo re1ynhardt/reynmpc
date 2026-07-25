@@ -83,6 +83,12 @@ class MockAudioBackend implements AudioBackend {
   }
 
   @override
+  Future<List<Track>> fetchAllTracks() async {
+    await Future.delayed(_networkDelay);
+    return _tracksByPlaylist.values.expand((list) => list).toList();
+  }
+
+  @override
   Future<List<Track>> searchTracks(String query) async {
     await Future.delayed(_networkDelay);
     final q = query.toLowerCase().trim();
@@ -100,5 +106,51 @@ class MockAudioBackend implements AudioBackend {
   Future<String> resolveStreamUrl(Track track) async {
     // В реальном бэкенде тут мог бы быть запрос за временным подписанным URL.
     return track.audioUrl;
+  }
+
+  @override
+  Future<void> deletePlaylist(String playlistId) async {
+    await Future.delayed(_networkDelay);
+    _playlists.removeWhere((p) => p.id == playlistId);
+    _tracksByPlaylist.remove(playlistId);
+  }
+
+  @override
+  Future<Playlist> renamePlaylist(String playlistId, String newName) async {
+    await Future.delayed(_networkDelay);
+    final index = _playlists.indexWhere((p) => p.id == playlistId);
+    if (index == -1) {
+      throw StateError('Playlist $playlistId not found');
+    }
+    final updated = Playlist(
+      id: _playlists[index].id,
+      name: newName,
+      coverUrl: _playlists[index].coverUrl,
+      description: _playlists[index].description,
+      isVirtual: _playlists[index].isVirtual,
+    );
+    _playlists[index] = updated;
+    return updated;
+  }
+
+  // userId -> набор id лайкнутых треков. Просто в памяти — мок не должен
+  // изображать настоящее хранилище, только не ломать интерфейс.
+  final Map<String, Set<String>> _favoritesByUser = {};
+
+  @override
+  Future<Set<String>> fetchFavoriteTrackIds(String userId) async {
+    await Future.delayed(_networkDelay);
+    return Set.of(_favoritesByUser[userId] ?? const {});
+  }
+
+  @override
+  Future<void> setFavorite({required String userId, required String trackId, required bool favorite}) async {
+    await Future.delayed(_networkDelay);
+    final set = _favoritesByUser.putIfAbsent(userId, () => <String>{});
+    if (favorite) {
+      set.add(trackId);
+    } else {
+      set.remove(trackId);
+    }
   }
 }
