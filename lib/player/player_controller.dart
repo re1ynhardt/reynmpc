@@ -24,6 +24,10 @@ class PlayerController extends ChangeNotifier {
       _position = pos;
       notifyListeners();
     });
+    _player.durationStream.listen((d) {
+      _playerDuration = d;
+      notifyListeners();
+    });
   }
 
   final AudioBackend _backend;
@@ -34,6 +38,11 @@ class PlayerController extends ChangeNotifier {
   bool _isPlaying = false;
   bool _isLoading = false;
   Duration _position = Duration.zero;
+  // Реальная длительность текущего потока по данным just_audio. У треков,
+  // загруженных вручную (без корректных метаданных), Track.duration может
+  // быть нулевым, хотя сам файл проигрывается нормально — в этом случае
+  // ориентируемся на то, что знает сам плеер, а не на метаданные.
+  Duration? _playerDuration;
   double _volume = 0.8;
   bool _shuffle = false;
   PlayerRepeatMode _repeatMode = PlayerRepeatMode.off;
@@ -42,7 +51,11 @@ class PlayerController extends ChangeNotifier {
   bool get isPlaying => _isPlaying;
   bool get isLoading => _isLoading;
   Duration get position => _position;
-  Duration get duration => currentTrack?.duration ?? Duration.zero;
+  Duration get duration {
+    final fromPlayer = _playerDuration;
+    if (fromPlayer != null && fromPlayer > Duration.zero) return fromPlayer;
+    return currentTrack?.duration ?? Duration.zero;
+  }
   double get volume => _volume;
   bool get shuffle => _shuffle;
   PlayerRepeatMode get repeatMode => _repeatMode;
@@ -61,6 +74,7 @@ class PlayerController extends ChangeNotifier {
     final track = currentTrack;
     if (track == null) return;
     _isLoading = true;
+    _playerDuration = null;
     notifyListeners();
     try {
       final url = await _backend.resolveStreamUrl(track);
