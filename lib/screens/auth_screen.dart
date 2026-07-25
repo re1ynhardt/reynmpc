@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -88,15 +90,52 @@ class _AuthScreenState extends State<AuthScreen> {
 
     return Scaffold(
       backgroundColor: pal.background,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 380),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
-            child: Column(
+      body: Stack(
+        children: [
+          // Мягкое акцентное свечение в углу — оживляет плоский фон.
+          Positioned(
+            top: -120,
+            right: -120,
+            child: Container(
+              width: 360,
+              height: 360,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [pal.accentGlow, pal.accentGlow.withOpacity(0)],
+                ),
+              ),
+            ),
+          ),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 380),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+                      decoration: BoxDecoration(
+                        color: pal.glassFill,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: pal.glassBorder),
+                        boxShadow: [
+                          BoxShadow(color: pal.glassShadow, blurRadius: 40, offset: const Offset(0, 20)),
+                        ],
+                      ),
+                      child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.music_note, color: AppColors.red, size: 48),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: pal.accentGlow, blurRadius: 24)],
+                  ),
+                  child: const Icon(Icons.music_note, color: AppColors.red, size: 48),
+                ),
                 const SizedBox(height: 16),
                 Text(
                   s.authWelcomeTitle,
@@ -149,31 +188,45 @@ class _AuthScreenState extends State<AuthScreen> {
                 SizedBox(
                   width: double.infinity,
                   height: 46,
-                  child: ElevatedButton(
-                    onPressed: _isSubmitting ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.red,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(color: pal.accentGlow, blurRadius: 20, offset: const Offset(0, 8)),
+                      ],
                     ),
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : Text(
-                            _isRegisterTab ? s.authRegisterButton : s.authLoginButton,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.red,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : Text(
+                              _isRegisterTab ? s.authRegisterButton : s.authLoginButton,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                    ),
                   ),
                 ),
               ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -198,8 +251,9 @@ class _TabSwitch extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: pal.surfaceHigh,
+        color: pal.glassFillStrong,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: pal.glassBorder),
       ),
       child: Row(
         children: [
@@ -270,8 +324,9 @@ class _AuthField extends StatelessWidget {
     final pal = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: pal.surfaceHigh,
+        color: pal.glassFillStrong,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: pal.glassBorder),
       ),
       child: TextField(
         controller: controller,

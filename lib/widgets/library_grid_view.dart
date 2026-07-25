@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -167,11 +168,16 @@ class _LibraryCardState extends State<_LibraryCard> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: _hovering ? pal.surfaceHigh : pal.surface,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _hovering ? pal.glassBorder : Colors.transparent),
+            boxShadow: _hovering
+                ? [BoxShadow(color: pal.glassShadow, blurRadius: 24, offset: const Offset(0, 10))]
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,7 +186,7 @@ class _LibraryCardState extends State<_LibraryCard> {
                 alignment: Alignment.bottomRight,
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(10),
                     child: AspectRatio(
                       aspectRatio: 1,
                       child: widget.playlist.isVirtual
@@ -196,7 +202,11 @@ class _LibraryCardState extends State<_LibraryCard> {
                     Padding(
                       padding: const EdgeInsets.all(8),
                       child: Container(
-                        decoration: BoxDecoration(color: pal.accent, shape: BoxShape.circle),
+                        decoration: BoxDecoration(
+                          color: pal.accent,
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: pal.accentGlow, blurRadius: 14)],
+                        ),
                         padding: const EdgeInsets.all(8),
                         child: Icon(Icons.play_arrow, color: pal.onAccent, size: 20),
                       ),
@@ -207,31 +217,9 @@ class _LibraryCardState extends State<_LibraryCard> {
                       bottom: 4,
                       child: Row(
                         children: [
-                          Material(
-                            color: Colors.black54,
-                            shape: const CircleBorder(),
-                            child: InkWell(
-                              customBorder: const CircleBorder(),
-                              onTap: () => _showRenameDialog(context),
-                              child: const Padding(
-                                padding: EdgeInsets.all(6),
-                                child: Icon(Icons.edit, color: Colors.white, size: 16),
-                              ),
-                            ),
-                          ),
+                          _CoverGlassButton(icon: Icons.edit, onTap: () => _showRenameDialog(context)),
                           const SizedBox(width: 6),
-                          Material(
-                            color: Colors.black54,
-                            shape: const CircleBorder(),
-                            child: InkWell(
-                              customBorder: const CircleBorder(),
-                              onTap: () => _showDeleteDialog(context),
-                              child: const Padding(
-                                padding: EdgeInsets.all(6),
-                                child: Icon(Icons.delete_outline, color: Colors.white, size: 16),
-                              ),
-                            ),
-                          ),
+                          _CoverGlassButton(icon: Icons.delete_outline, onTap: () => _showDeleteDialog(context)),
                         ],
                       ),
                     ),
@@ -252,6 +240,37 @@ class _LibraryCardState extends State<_LibraryCard> {
                 style: TextStyle(color: pal.textSecondary, fontSize: 12),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Маленькая стеклянная круглая кнопка поверх обложки (редактировать/
+/// удалить) — блюрит то, что под ней, вместо плоской чёрной заливки.
+class _CoverGlassButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _CoverGlassButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Material(
+          color: Colors.black.withOpacity(0.35),
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: Icon(icon, color: Colors.white, size: 16),
+            ),
           ),
         ),
       ),

@@ -109,6 +109,17 @@ class YandexStorageAudioBackend implements AudioBackend {
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
     final items = (decoded['items'] as List).cast<Map<String, dynamic>>();
 
+    // db/tracks.json хранит треки в порядке добавления (новые — в конце),
+    // а Главная (см. MusicLibrary.homeTracks) берёт первые N из allTracks —
+    // без сортировки туда попадали бы самые старые треки. Сортируем по
+    // created_at по убыванию, чтобы allTracks (и всё, что от него зависит)
+    // шёл от самого свежего трека к самому старому.
+    items.sort((a, b) {
+      final aTime = (a['created_at'] as num?)?.toDouble() ?? 0;
+      final bTime = (b['created_at'] as num?)?.toDouble() ?? 0;
+      return bTime.compareTo(aTime);
+    });
+
     final tracks = items.map(_trackFromJson).toList();
     _tracksCache = tracks;
     _tracksByIdCache = {for (final t in tracks) t.id: t};

@@ -11,8 +11,8 @@ import '../models/playlist.dart';
 import '../theme/app_theme.dart';
 import '../widgets/account_menu.dart';
 import '../widgets/library_grid_view.dart';
+import '../widgets/logo_mark.dart';
 import '../widgets/player_bar.dart';
-import '../widgets/sidebar.dart';
 import '../widgets/track_list_view.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -98,15 +98,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _pushHistory(view);
   }
 
-  void _openPlaylistByIndex(int index) {
-    final library = context.read<MusicLibrary>();
-    if (index < 0 || index >= library.playlists.length) return;
-    final playlist = library.playlists[index];
-    library.selectPlaylist(playlist);
-    setState(() => _view = NavView.home);
-    _pushHistory(NavView.home, playlist: playlist);
-  }
-
   void _openPlaylist(Playlist playlist) {
     context.read<MusicLibrary>().selectPlaylist(playlist);
     setState(() => _view = NavView.home);
@@ -128,33 +119,32 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Column(
         children: [
           Expanded(
-            child: Row(
-              children: [
-                Sidebar(
-                  activeView: _view,
-                  onNavSelect: _goTo,
-                  onPlaylistTap: _openPlaylistByIndex,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color.alphaBlend(pal.accentGlow.withOpacity(0.06), pal.background),
+                    pal.background,
+                  ],
+                  stops: const [0.0, 0.4],
                 ),
-                Expanded(
-                  child: Container(
-                    color: pal.background,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _TopBar(
-                          view: _view,
-                          controller: _searchController,
-                          onNavSelect: _goTo,
-                          onSearchChanged: library.search,
-                          onBack: _canGoBack ? _goBack : null,
-                          onForward: _canGoForward ? _goForward : null,
-                        ),
-                        Expanded(child: _buildContent(library)),
-                      ],
-                    ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _TopBar(
+                    view: _view,
+                    controller: _searchController,
+                    onNavSelect: _goTo,
+                    onSearchChanged: library.search,
+                    onBack: _canGoBack ? _goBack : null,
+                    onForward: _canGoForward ? _goForward : null,
                   ),
-                ),
-              ],
+                  Expanded(child: _buildContent(library)),
+                ],
+              ),
             ),
           ),
           const PlayerBar(),
@@ -207,30 +197,45 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
       child: Column(
         children: [
-          Row(
+          Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
             children: [
-              Row(
-                children: [
-                  _RoundButton(icon: Icons.chevron_left, onTap: onBack),
-                  const SizedBox(width: 8),
-                  _RoundButton(icon: Icons.chevron_right, onTap: onForward),
-                ],
-              ),
-              // Центрируем группу навигационных виджетов относительно всей
-              // ширины полосы — по бокам такой же по смыслу "вес", как у
-              // кнопок навигации слева.
-              Expanded(
-                child: Center(
-                  child: _NavPillGroup(
-                    view: view,
-                    onNavSelect: onNavSelect,
-                    labels: s,
-                  ),
+              // Логотип и надпись ReynM — раньше жили в сайдбаре, теперь
+              // слева в верхней панели вместе с кнопками истории.
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const LogoMark(size: 28),
+                    const SizedBox(width: 8),
+                    Text(
+                      'ReynM',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: pal.textPrimary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    _RoundButton(icon: Icons.chevron_left, onTap: onBack),
+                    const SizedBox(width: 8),
+                    _RoundButton(icon: Icons.chevron_right, onTap: onForward),
+                  ],
                 ),
               ),
-              const SizedBox(
-                width: 32 + 8 + 32, // баланс под левые кнопки
-                child: Align(alignment: Alignment.centerRight, child: AccountAvatarButton()),
+              // Группа навигационных виджетов центрируется относительно
+              // всей ширины полосы независимо от ширины боковых групп.
+              _NavPillGroup(
+                view: view,
+                onNavSelect: onNavSelect,
+                labels: s,
+              ),
+              const Align(
+                alignment: Alignment.centerRight,
+                child: AccountAvatarButton(),
               ),
             ],
           ),
@@ -389,21 +394,29 @@ class _GlassSurface extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        filter: ImageFilter.blur(sigmaX: 26, sigmaY: 26),
         child: Container(
-          padding: padding,
           decoration: BoxDecoration(
-            color: strong ? pal.glassFillStrong : pal.glassFill,
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(color: pal.glassBorder),
             boxShadow: [
               BoxShadow(
                 color: pal.glassShadow,
-                blurRadius: 20,
-                offset: const Offset(0, 6),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
               ),
             ],
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color.alphaBlend(pal.glassHighlight, strong ? pal.glassFillStrong : pal.glassFill),
+                strong ? pal.glassFillStrong : pal.glassFill,
+              ],
+              stops: const [0.0, 0.4],
+            ),
           ),
+          padding: padding,
           child: child,
         ),
       ),
@@ -418,18 +431,24 @@ class _RoundButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pal = AppColors.of(context);
     final enabled = onTap != null;
-    return InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: enabled ? Colors.black45 : Colors.black26,
-          shape: BoxShape.circle,
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: pal.glassFill,
+            shape: BoxShape.circle,
+            border: Border.all(color: pal.glassBorder),
+          ),
+          child: Icon(icon, size: 20, color: enabled ? pal.textPrimary : pal.textSecondary.withOpacity(0.5)),
         ),
-        child: Icon(icon, size: 20, color: enabled ? Colors.white : Colors.white38),
       ),
     );
   }
@@ -457,25 +476,33 @@ class _PlaylistContent extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: playlist.isVirtual
-                      ? Container(
-                          width: 160,
-                          height: 160,
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF8395F0), Color(0xFFB33F86)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(color: pal.glassShadow, blurRadius: 32, offset: const Offset(0, 12)),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: playlist.isVirtual
+                        ? Container(
+                            width: 160,
+                            height: 160,
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0xFF8395F0), Color(0xFFB33F86)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                             ),
-                          ),
-                          child: const Center(
-                            child: Icon(Icons.favorite, color: Colors.white, size: 64),
-                          ),
-                        )
-                      : Image.network(playlist.coverUrl, width: 160, height: 160, fit: BoxFit.cover,
-                          errorBuilder: (ctx, error, stackTrace) => Container(width: 160, height: 160, color: pal.surfaceHigh)),
+                            child: const Center(
+                              child: Icon(Icons.favorite, color: Colors.white, size: 64),
+                            ),
+                          )
+                        : Image.network(playlist.coverUrl, width: 160, height: 160, fit: BoxFit.cover,
+                            errorBuilder: (ctx, error, stackTrace) => Container(width: 160, height: 160, color: pal.surfaceHigh)),
+                  ),
                 ),
                 const SizedBox(width: 20),
                 Column(

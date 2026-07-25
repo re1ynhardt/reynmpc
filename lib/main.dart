@@ -17,11 +17,24 @@ import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
 
 void main() {
+  // PaintingBinding (и вместе с ним imageCache) появляется только после
+  // инициализации биндингов — обычно это делает сам runApp(), но нам
+  // нужен доступ к imageCache ещё до него, поэтому инициализируем явно.
+  WidgetsFlutterBinding.ensureInitialized();
+
   // just_audio сам не умеет играть звук на Windows/Linux — эта строка
   // подключает реализацию через media_kit (libmpv), см. pubspec.yaml.
   // Без неё play() на Windows молча ничего не делает: интерфейс думает,
   // что трек играет, а по факту декодировать/выводить звук некому.
   JustAudioMediaKit.ensureInitialized(windows: true, linux: true);
+
+  // Кэш обложек треков в оперативной памяти. Flutter и так кэширует
+  // декодированные Image.network по URL через глобальный ImageCache —
+  // здесь только ограничиваем его размер, чтобы при пролистывании
+  // больших медиатек он не расползался бесконтрольно: 100 обложек
+  // с запасом хватает на то, что видно на экране плюс недавние треки,
+  // а старые вытесняются по LRU автоматически.
+  PaintingBinding.instance.imageCache.maximumSize = 100;
 
   runApp(SpotifyCloneApp(backend: _createBackend()));
 }

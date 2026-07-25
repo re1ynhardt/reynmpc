@@ -25,6 +25,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color glassBorderStrong;
   final Color glassShadow;
   final Color scrollbarThumb;
+  final Color accentGlow; // мягкое акцентное свечение (кнопка play, активные карточки)
+  final Color glassHighlight; // тонкий блик по верхнему краю стеклянных поверхностей
 
   const AppPalette({
     required this.background,
@@ -44,6 +46,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.glassBorderStrong,
     required this.glassShadow,
     required this.scrollbarThumb,
+    required this.accentGlow,
+    required this.glassHighlight,
   });
 
   static const dark = AppPalette(
@@ -64,6 +68,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     glassBorderStrong: Color(0x52FFFFFF), // белый, ~32%
     glassShadow: Color(0x59000000), // чёрный, ~35% — глубже тень на светлом фоне
     scrollbarThumb: Colors.white24,
+    accentGlow: Color(0x4DE0294B), // акцент, ~30% — свечение под play-кнопкой и активными карточками
+    glassHighlight: Color(0x26FFFFFF), // белый, ~15% — блик по верхнему краю стекла
   );
 
   static const light = AppPalette(
@@ -84,6 +90,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     glassBorderStrong: Color(0x33000000), // чёрный, ~20%
     glassShadow: Color(0x26000000), // чёрный, ~15%
     scrollbarThumb: Colors.black26,
+    accentGlow: Color(0x33E0294B), // акцент, ~20%
+    glassHighlight: Color(0x59FFFFFF), // белый, ~35% — на светлом фоне блик нужен ярче
   );
 
   @override
@@ -105,6 +113,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? glassBorderStrong,
     Color? glassShadow,
     Color? scrollbarThumb,
+    Color? accentGlow,
+    Color? glassHighlight,
   }) {
     return AppPalette(
       background: background ?? this.background,
@@ -124,6 +134,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
       glassBorderStrong: glassBorderStrong ?? this.glassBorderStrong,
       glassShadow: glassShadow ?? this.glassShadow,
       scrollbarThumb: scrollbarThumb ?? this.scrollbarThumb,
+      accentGlow: accentGlow ?? this.accentGlow,
+      glassHighlight: glassHighlight ?? this.glassHighlight,
     );
   }
 
@@ -148,6 +160,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
       glassBorderStrong: Color.lerp(glassBorderStrong, other.glassBorderStrong, t)!,
       glassShadow: Color.lerp(glassShadow, other.glassShadow, t)!,
       scrollbarThumb: Color.lerp(scrollbarThumb, other.scrollbarThumb, t)!,
+      accentGlow: Color.lerp(accentGlow, other.accentGlow, t)!,
+      glassHighlight: Color.lerp(glassHighlight, other.glassHighlight, t)!,
     );
   }
 }

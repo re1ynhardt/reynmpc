@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -33,43 +34,91 @@ class Sidebar extends StatelessWidget {
 
     return Container(
       width: 88,
-      color: pal.sidebar,
-      child: Column(
-        children: [
-          const SizedBox(height: 24),
-          _LogoMark(size: 32, noteColor: pal.textPrimary),
-          const SizedBox(height: 6),
-          Text(
-            'ReynM',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: pal.textPrimary, letterSpacing: 0.5),
-          ),
-          const Spacer(),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 20),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => showDialog(context: context, builder: (_) => const SettingsDialog()),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.settings_outlined, color: pal.textSecondary, size: 22),
-                      const SizedBox(height: 4),
-                      Text(
-                        s.settings,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: pal.textSecondary, fontSize: 10, fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
+      decoration: BoxDecoration(
+        color: pal.sidebar,
+        border: Border(right: BorderSide(color: pal.glassBorder, width: 1)),
+      ),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            color: pal.glassFill.withOpacity(pal.glassFill.opacity * 0.5),
+            child: Column(
+              children: [
+                const SizedBox(height: 24),
+                _LogoMark(size: 32, noteColor: pal.textPrimary),
+                const SizedBox(height: 6),
+                Text(
+                  'ReynM',
+                  style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.bold, color: pal.textPrimary, letterSpacing: 0.5),
                 ),
-              ),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: _SettingsEntry(label: s.settings),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Кнопка настроек с плавной "стеклянной" подсветкой при наведении —
+/// в той же визуальной системе, что и пилюли навигации в верхней панели.
+class _SettingsEntry extends StatefulWidget {
+  final String label;
+  const _SettingsEntry({required this.label});
+
+  @override
+  State<_SettingsEntry> createState() => _SettingsEntryState();
+}
+
+class _SettingsEntryState extends State<_SettingsEntry> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = AppColors.of(context);
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => showDialog(context: context, builder: (_) => const SettingsDialog()),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: _hovering ? pal.glassFill : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _hovering ? pal.glassBorder : Colors.transparent),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.settings_outlined,
+                    color: _hovering ? pal.textPrimary : pal.textSecondary, size: 22),
+                const SizedBox(height: 4),
+                Text(
+                  widget.label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: _hovering ? pal.textPrimary : pal.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -86,13 +135,25 @@ class _LogoMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(
-        painter: const _RingPainter(),
-        child: Center(
-          child: Icon(Icons.music_note, color: noteColor, size: size * 0.5),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8395F0).withOpacity(0.35),
+            blurRadius: 16,
+            spreadRadius: -2,
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: CustomPaint(
+          painter: const _RingPainter(),
+          child: Center(
+            child: Icon(Icons.music_note, color: noteColor, size: size * 0.5),
+          ),
         ),
       ),
     );

@@ -35,8 +35,14 @@ class TrackListView extends StatelessWidget {
             children: [
               SizedBox(width: 32, child: Text('#', style: TextStyle(color: pal.textSecondary))),
               const SizedBox(width: 12),
-              Expanded(flex: 4, child: Text(s.columnTitle, style: TextStyle(color: pal.textSecondary, fontSize: 12))),
-              Expanded(flex: 3, child: Text(s.columnAlbum, style: TextStyle(color: pal.textSecondary, fontSize: 12))),
+              Expanded(
+                  flex: 4,
+                  child: Text(s.columnTitle.toUpperCase(),
+                      style: TextStyle(color: pal.textSecondary, fontSize: 11, letterSpacing: 1))),
+              Expanded(
+                  flex: 3,
+                  child: Text(s.columnAlbum.toUpperCase(),
+                      style: TextStyle(color: pal.textSecondary, fontSize: 11, letterSpacing: 1))),
               Icon(Icons.access_time, size: 16, color: pal.textSecondary),
               const SizedBox(width: 24),
             ],
@@ -175,8 +181,12 @@ class _TrackRowState extends State<_TrackRow> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: Container(
-          color: _hovering ? pal.hoverOverlay : Colors.transparent,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: _hovering ? pal.hoverOverlay : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
           child: Row(
             children: [
               SizedBox(

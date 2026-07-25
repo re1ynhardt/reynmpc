@@ -11,11 +11,17 @@ class TrackArtwork extends StatelessWidget {
   final double size;
   final BorderRadius borderRadius;
 
+  /// Мягкая приподнятая тень под обложкой — включается только для более
+  /// крупных обложек (плеер, шапка плейлиста), чтобы не перегружать
+  /// плотные списки треков лишними тенями.
+  final bool elevated;
+
   const TrackArtwork({
     super.key,
     required this.artworkUrl,
     required this.size,
-    this.borderRadius = const BorderRadius.all(Radius.circular(4)),
+    this.borderRadius = const BorderRadius.all(Radius.circular(6)),
+    this.elevated = false,
   });
 
   @override
@@ -30,7 +36,7 @@ class TrackArtwork extends StatelessWidget {
           child: Icon(Icons.music_note, size: size * 0.5, color: pal.textSecondary),
         );
 
-    return ClipRRect(
+    final image = ClipRRect(
       borderRadius: borderRadius,
       child: artworkUrl.isEmpty
           ? placeholder()
@@ -39,8 +45,29 @@ class TrackArtwork extends StatelessWidget {
               width: size,
               height: size,
               fit: BoxFit.cover,
+              // gaplessPlayback — переиспользовать уже закэшированный кадр
+              // вместо мигания пустотой, пока (если) идёт повторная загрузка.
+              gaplessPlayback: true,
+              // Декодируем сразу под нужный размер виджета (с запасом под
+              // Retina-экраны), а не в исходном разрешении с сервера —
+              // иначе даже ограниченный по количеству ImageCache может
+              // раздуться по памяти на паре десятков крупных обложек.
+              cacheWidth: (size * 2).round(),
+              cacheHeight: (size * 2).round(),
               errorBuilder: (ctx, error, stackTrace) => placeholder(),
             ),
+    );
+
+    if (!elevated) return image;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        boxShadow: [
+          BoxShadow(color: pal.glassShadow, blurRadius: 18, offset: const Offset(0, 6)),
+        ],
+      ),
+      child: image,
     );
   }
 }
