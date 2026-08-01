@@ -9,15 +9,13 @@ import '../models/nav_view.dart';
 import '../theme/app_theme.dart';
 import 'settings_dialog.dart';
 
-/// Урезанный сайдбар: только логотип сверху и настройки снизу.
-/// Навигация (Главная / Поиск / Моя медиатека) и список плейлистов
-/// переехали в виджеты по центру верхней панели — см. HomeScreen._TopBar.
+/// Полный сайдбар в стиле референса: логотип сверху, список разделов
+/// навигации и небольшая карточка-плашка снизу. Разделы, для которых
+/// в приложении пока нет отдельного экрана (Обзор/Плейлисты/Сообщество/
+/// Загрузки), ведут на Главную — они здесь только визуально, как в макете.
 class Sidebar extends StatelessWidget {
   final NavView activeView;
   final ValueChanged<NavView> onNavSelect;
-
-  /// Оставлен для совместимости с вызывающим кодом — плейлисты
-  /// в сайдбаре больше не отображаются.
   final ValueChanged<int> onPlaylistTap;
 
   const Sidebar({
@@ -33,7 +31,7 @@ class Sidebar extends StatelessWidget {
     final pal = AppColors.of(context);
 
     return Container(
-      width: 88,
+      width: 230,
       decoration: BoxDecoration(
         color: pal.sidebar,
         border: Border(right: BorderSide(color: pal.glassBorder, width: 1)),
@@ -43,21 +41,49 @@ class Sidebar extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
             color: pal.glassFill.withOpacity(pal.glassFill.opacity * 0.5),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 24),
-                _LogoMark(size: 32, noteColor: pal.textPrimary),
-                const SizedBox(height: 6),
-                Text(
-                  'ReynM',
-                  style: TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.bold, color: pal.textPrimary, letterSpacing: 0.5),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    const _LogoMark(size: 26, noteColor: Colors.white),
+                    const SizedBox(width: 10),
+                    Text(
+                      'ReynM',
+                      style: TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.bold, color: pal.textPrimary, letterSpacing: 0.3),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 28),
+                _NavEntry(
+                  icon: Icons.home_filled,
+                  label: s.navHome,
+                  selected: activeView == NavView.home,
+                  onTap: () => onNavSelect(NavView.home),
+                ),
+                const _NavEntry(icon: Icons.query_stats_rounded, label: 'Обзор', selected: false),
+                _NavEntry(
+                  icon: Icons.grid_view_rounded,
+                  label: 'Библиотека',
+                  selected: activeView == NavView.library,
+                  onTap: () => onNavSelect(NavView.library),
+                ),
+                const _NavEntry(icon: Icons.queue_music_rounded, label: 'Плейлисты', selected: false),
+                const _NavEntry(icon: Icons.groups_rounded, label: 'Сообщество', selected: false),
+                const _NavEntry(icon: Icons.download_rounded, label: 'Загрузки', selected: false),
                 const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: _SettingsEntry(label: s.settings),
+                _NavEntry(
+                  icon: Icons.settings_outlined,
+                  label: s.settings,
+                  selected: false,
+                  onTap: () => showDialog(context: context, builder: (_) => const SettingsDialog()),
                 ),
+                const SizedBox(height: 12),
+                _AmbientCard(pal: pal),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -67,57 +93,110 @@ class Sidebar extends StatelessWidget {
   }
 }
 
-/// Кнопка настроек с плавной "стеклянной" подсветкой при наведении —
-/// в той же визуальной системе, что и пилюли навигации в верхней панели.
-class _SettingsEntry extends StatefulWidget {
+/// Один пункт вертикальной навигации — иконка + подпись, с подсветкой
+/// активного/наведённого состояния.
+class _NavEntry extends StatefulWidget {
+  final IconData icon;
   final String label;
-  const _SettingsEntry({required this.label});
+  final bool selected;
+  final VoidCallback? onTap;
+
+  const _NavEntry({required this.icon, required this.label, required this.selected, this.onTap});
 
   @override
-  State<_SettingsEntry> createState() => _SettingsEntryState();
+  State<_NavEntry> createState() => _NavEntryState();
 }
 
-class _SettingsEntryState extends State<_SettingsEntry> {
+class _NavEntryState extends State<_NavEntry> {
   bool _hovering = false;
 
   @override
   Widget build(BuildContext context) {
     final pal = AppColors.of(context);
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovering = true),
-      onExit: (_) => setState(() => _hovering = false),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => showDialog(context: context, builder: (_) => const SettingsDialog()),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: _hovering ? pal.glassFill : Colors.transparent,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _hovering ? pal.glassBorder : Colors.transparent),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.settings_outlined,
-                    color: _hovering ? pal.textPrimary : pal.textSecondary, size: 22),
-                const SizedBox(height: 4),
-                Text(
-                  widget.label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _hovering ? pal.textPrimary : pal.textSecondary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
+    final active = widget.selected;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovering = true),
+        onExit: (_) => setState(() => _hovering = false),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: widget.onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOut,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              decoration: BoxDecoration(
+                color: active
+                    ? const Color(0xFF3D6BF0).withOpacity(0.18)
+                    : (_hovering ? pal.glassFill : Colors.transparent),
+                borderRadius: BorderRadius.circular(12),
+                border: active ? Border.all(color: const Color(0xFF3D6BF0).withOpacity(0.4)) : null,
+              ),
+              child: Row(
+                children: [
+                  Icon(widget.icon, size: 19, color: active ? const Color(0xFF6E93FF) : pal.textSecondary),
+                  const SizedBox(width: 14),
+                  Text(
+                    widget.label,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                      color: active ? pal.textPrimary : pal.textSecondary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Небольшая декоративная карточка внизу сайдбара ("Rain outside")
+/// — статична, просто задаёт настроение, как в макете.
+class _AmbientCard extends StatelessWidget {
+  final AppPalette pal;
+  const _AmbientCard({required this.pal});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        height: 84,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1B2740), Color(0xFF0E1420)],
+          ),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text('Rain outside',
+                      style: TextStyle(color: pal.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text('Perfect time for music',
+                      style: TextStyle(color: pal.textSecondary, fontSize: 10.5)),
+                ],
+              ),
+            ),
+            Icon(Icons.graphic_eq_rounded, color: pal.textSecondary.withOpacity(0.8), size: 20),
+          ],
         ),
       ),
     );
@@ -126,7 +205,6 @@ class _SettingsEntryState extends State<_SettingsEntry> {
 
 /// Логотип из icon.pdn: незамкнутое кольцо градиентом (сине-фиолетовое)
 /// с разрывом снизу и белой музыкальной нотой внутри.
-/// Фон и надпись "" из исходника сюда намеренно не перенесены.
 class _LogoMark extends StatelessWidget {
   final double size;
   final Color noteColor;
@@ -165,8 +243,7 @@ class _RingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height)
-        .deflate(size.width * 0.08);
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height).deflate(size.width * 0.08);
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
@@ -178,7 +255,6 @@ class _RingPainter extends CustomPainter {
         end: Alignment.bottomRight,
       ).createShader(rect);
 
-    // Кольцо с разрывом снизу — как в оригинальном логотипе.
     const startAngle = 0.36 * math.pi;
     const sweepAngle = 2 * math.pi - 0.72 * math.pi;
     canvas.drawArc(rect, startAngle, sweepAngle, false, paint);

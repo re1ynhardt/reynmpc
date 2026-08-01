@@ -55,8 +55,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     surface: Color(0xFF181818),
     surfaceHigh: Color(0xFF282828), // заметно светлее — даёт ощущение слоёв
     sidebar: Color(0xFF0A0A0A), // чуть темнее фона — сайдбар "утоплен"
-    accent: Color(0xFFE0294B),
-    onAccent: Colors.black,
+    accent: Color(0xFF3D6BF0),
+    onAccent: Colors.white,
     textPrimary: Color(0xFFF2F2F2), // не чистый белый — меньше режет глаз
     textSecondary: Color(0xFFA7A7A7),
     divider: Colors.white12,
@@ -68,7 +68,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     glassBorderStrong: Color(0x52FFFFFF), // белый, ~32%
     glassShadow: Color(0x59000000), // чёрный, ~35% — глубже тень на светлом фоне
     scrollbarThumb: Colors.white24,
-    accentGlow: Color(0x4DE0294B), // акцент, ~30% — свечение под play-кнопкой и активными карточками
+    accentGlow: Color(0x4D3D6BF0), // акцент, ~30% — свечение под play-кнопкой и активными карточками
     glassHighlight: Color(0x26FFFFFF), // белый, ~15% — блик по верхнему краю стекла
   );
 
@@ -77,8 +77,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     surface: Color(0xFFFFFFFF),
     surfaceHigh: Color(0xFFE9E9EC),
     sidebar: Color(0xFFFFFFFF),
-    accent: Color(0xFFE0294B),
-    onAccent: Colors.black,
+    accent: Color(0xFF3D6BF0),
+    onAccent: Colors.white,
     textPrimary: Color(0xFF121212),
     textSecondary: Color(0xFF5E5E5E),
     divider: Colors.black12,
@@ -90,7 +90,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     glassBorderStrong: Color(0x33000000), // чёрный, ~20%
     glassShadow: Color(0x26000000), // чёрный, ~15%
     scrollbarThumb: Colors.black26,
-    accentGlow: Color(0x33E0294B), // акцент, ~20%
+    accentGlow: Color(0x333D6BF0), // акцент, ~20%
     glassHighlight: Color(0x59FFFFFF), // белый, ~35% — на светлом фоне блик нужен ярче
   );
 

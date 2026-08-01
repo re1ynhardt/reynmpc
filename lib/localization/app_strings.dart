@@ -89,7 +89,7 @@ class _StringsRu implements AppStrings {
   @override
   String get likedLibraryDescription => 'Треки, которые вам понравились';
   @override
-  String get searchHint => 'Что хотите послушать?';
+  String get searchHint => 'Поиск треков, альбомов, исполнителей...';
   @override
   String get columnTitle => 'НАЗВАНИЕ';
   @override
