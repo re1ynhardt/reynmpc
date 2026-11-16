@@ -40,7 +40,7 @@ class YandexStorageConfig {
 ///
 /// После заполнения ключей бэкенд уже подключён в lib/main.dart.
 const yandexStorageConfig = YandexStorageConfig(
-  bucket: 'storagereyg',
-  accessKey: 'YCAJE0POvQbcWw9VSrNflht9s',
-  secretKey: 'YCMtrMWWbFX6UB-_dO4VuNa2cAnIBZJvemoAkWic',
+  bucket: 'не',
+  accessKey: 'не',
+  secretKey: 'не',
 );
